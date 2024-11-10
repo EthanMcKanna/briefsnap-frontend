@@ -1,3 +1,4 @@
+// src/components/BriefSnap.js
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
@@ -79,12 +80,19 @@ export default function BriefSnap() {
           ) : error ? (
             <div className="text-center text-red-500">{error}</div>
           ) : (
-            <ScrollArea className="h-[400px] rounded-md border p-4 bg-gray-50">
-              <h3 className="font-semibold mt-4 mb-2">Summary:</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-line">
-                {summary}
-              </p>
-            </ScrollArea>
+            <>
+              <ScrollArea className="h-[400px] rounded-md border p-4 bg-gray-50">
+                <h3 className="font-semibold mt-4 mb-2">Summary:</h3>
+                <p className="text-sm text-gray-600 whitespace-pre-line">
+                  {summary}
+                </p>
+              </ScrollArea>
+              {timestamp && (
+                <div className="mt-4 text-sm text-gray-500 text-center">
+                  {timestamp}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
         <CardFooter className="text-center text-sm text-gray-500">
