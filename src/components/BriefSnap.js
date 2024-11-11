@@ -71,7 +71,6 @@ export default function BriefSnap() {
   // Helper function to format date with relative time
   const formatDate = (date) => {
     const now = new Date();
-    const diff = now - date;
     const isToday = date.toDateString() === now.toDateString();
     const isYesterday = new Date(now - 86400000).toDateString() === date.toDateString();
 
