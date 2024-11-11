@@ -68,17 +68,35 @@ export default function BriefSnap() {
     fetchSummary()
   }, [])
 
-  // Helper function to format date
+  // Helper function to format date with relative time
   const formatDate = (date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const now = new Date();
+    const diff = now - date;
+    const isToday = date.toDateString() === now.toDateString();
+    const isYesterday = new Date(now - 86400000).toDateString() === date.toDateString();
+
+    const timeStr = date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
       timeZoneName: 'short'
-    }).format(date);
+    });
+
+    if (isToday) {
+      return `Today at ${timeStr}`;
+    } else if (isYesterday) {
+      return `Yesterday at ${timeStr}`;
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+      });
+    }
   }
 
   return (
