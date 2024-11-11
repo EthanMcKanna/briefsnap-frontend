@@ -26,24 +26,39 @@ export default function BriefSnap() {
         const q = query(summariesRef, orderBy('timestamp', 'desc'), limit(1))
         const querySnapshot = await getDocs(q)
 
+        console.log('Query snapshot size:', querySnapshot.size) // Debug log
+
         if (!querySnapshot.empty) {
           const doc = querySnapshot.docs[0]
           const data = doc.data()
-          setSummary(data.summary || "Summary content is empty.")
+          console.log('Retrieved document data:', data) // Debug log
+
+          if (!data.summary) {
+            throw new Error('Summary field is missing from the document')
+          }
+
+          setSummary(data.summary)
           
-          if (data.timestamp && data.timestamp.toDate) {
-            const date = data.timestamp.toDate()
-            setTimestamp(`Last updated: ${formatDate(date)}`)
+          if (data.timestamp) {
+            if (data.timestamp.toDate) {
+              const date = data.timestamp.toDate()
+              setTimestamp(`Last updated: ${formatDate(date)}`)
+            } else {
+              console.error('Timestamp is not a Firestore timestamp:', data.timestamp)
+              setTimestamp(`Last updated: Unknown`)
+            }
           } else {
-            setTimestamp('')
+            setTimestamp('No timestamp available')
           }
         } else {
-          setSummary("No summaries available at the moment.")
+          console.error('No documents found in the collection')
+          setSummary("No summaries available. Please check back later.")
           setTimestamp('')
         }
       } catch (err) {
         console.error("Error fetching summary:", err)
-        setError("Failed to load the latest summary.")
+        setError(`Failed to load the latest summary: ${err.message}`)
+        setSummary("")
       } finally {
         setLoading(false)
       }
@@ -54,13 +69,15 @@ export default function BriefSnap() {
 
   // Helper function to format date
   const formatDate = (date) => {
-    const options = {
-      year: 'numeric', month: 'long', day: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false,
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
       timeZoneName: 'short'
-    };
-    return date.toLocaleDateString(undefined, options);
+    }).format(date);
   }
 
   return (
@@ -81,9 +98,9 @@ export default function BriefSnap() {
             <div className="text-center text-red-500">{error}</div>
           ) : (
             <>
-              <ScrollArea className="h-[400px] rounded-md border p-4 bg-gray-50">
-                <h3 className="font-semibold mt-4 mb-2">Summary:</h3>
-                <p className="text-sm text-gray-600 whitespace-pre-line">
+              <ScrollArea className="rounded-md border p-4 bg-gray-50">
+                <h3 className="font-semibold mb-2">Summary:</h3>
+                <p className="text-sm text-gray-600">
                   {summary}
                 </p>
               </ScrollArea>
