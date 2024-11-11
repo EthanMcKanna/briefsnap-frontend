@@ -1,5 +1,6 @@
 // src/components/BriefSnap.js
 import React, { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
 import { Newspaper } from 'lucide-react'
@@ -100,9 +101,9 @@ export default function BriefSnap() {
             <>
               <ScrollArea className="rounded-md border p-4 bg-gray-50">
                 <h3 className="font-semibold mb-2">Summary:</h3>
-                <p className="text-sm text-gray-600">
-                  {summary}
-                </p>
+                <div className="text-sm text-gray-600 prose prose-sm max-w-none">
+                  <ReactMarkdown>{summary}</ReactMarkdown>
+                </div>
               </ScrollArea>
               {timestamp && (
                 <div className="mt-4 text-sm text-gray-500 text-center">
