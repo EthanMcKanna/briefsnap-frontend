@@ -9,6 +9,7 @@ import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
+  const [stories, setStories] = useState([])
   const [timestamp, setTimestamp] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -39,6 +40,7 @@ export default function BriefSnap() {
           }
 
           setSummary(data.summary)
+          setStories(data.stories || [])
           
           if (data.timestamp) {
             if (data.timestamp.toDate) {
@@ -54,12 +56,14 @@ export default function BriefSnap() {
         } else {
           console.error('No documents found in the collection')
           setSummary("No summaries available. Please check back later.")
+          setStories([])
           setTimestamp('')
         }
       } catch (err) {
         console.error("Error fetching summary:", err)
         setError(`Failed to load the latest summary: ${err.message}`)
         setSummary("")
+        setStories([])
       } finally {
         setLoading(false)
       }
@@ -116,12 +120,27 @@ export default function BriefSnap() {
             <div className="text-center text-red-500">{error}</div>
           ) : (
             <>
-              <ScrollArea className="rounded-md border p-4 bg-gray-50">
+              <ScrollArea className="rounded-md border p-4 bg-gray-50 mb-6">
                 <h3 className="font-semibold mb-2">Summary:</h3>
                 <div className="text-sm text-gray-600 prose prose-sm max-w-none">
                   <ReactMarkdown>{summary}</ReactMarkdown>
                 </div>
               </ScrollArea>
+
+              {stories.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-4">Top Stories:</h3>
+                  <div className="space-y-4">
+                    {stories.map((story, index) => (
+                      <div key={index} className="rounded-lg border p-4 bg-white">
+                        <h4 className="font-medium text-gray-900 mb-2">{story.title}</h4>
+                        <p className="text-sm text-gray-600">{story.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {timestamp && (
                 <div className="mt-4 text-sm text-gray-500 text-center">
                   {timestamp}
