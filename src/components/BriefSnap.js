@@ -6,6 +6,7 @@ import { ScrollArea } from "./ui/ScrollArea"
 import { Newspaper } from 'lucide-react'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
+import { useNavigate } from 'react-router-dom'
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
@@ -13,6 +14,8 @@ export default function BriefSnap() {
   const [timestamp, setTimestamp] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const navigate = useNavigate()
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -102,6 +105,10 @@ export default function BriefSnap() {
     }
   }
 
+  const handleReadMore = (articleId) => {
+    navigate(`/article/${articleId}`)
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-3xl">
@@ -135,6 +142,12 @@ export default function BriefSnap() {
                       <div key={index} className="rounded-lg border p-4 bg-white">
                         <h4 className="font-medium text-gray-900 mb-2">{story.title}</h4>
                         <p className="text-sm text-gray-600">{story.description}</p>
+                        <button 
+                          className="text-blue-500 hover:underline mt-2"
+                          onClick={() => handleReadMore(index)}
+                        >
+                          Read More
+                        </button>
                       </div>
                     ))}
                   </div>
