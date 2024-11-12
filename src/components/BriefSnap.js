@@ -150,7 +150,7 @@ export default function BriefSnap() {
           )}
         </CardContent>
         <CardFooter className="text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} BriefSnap. All rights reserved.
+          © {new Date().getFullYear()} BriefSnap. All rights reserved. Created by <a href="https://www.ethanmckanna.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ethan McKanna</a>.
         </CardFooter>
       </Card>
     </div>
