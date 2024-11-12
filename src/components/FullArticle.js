@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { db } from '../firebase'
-import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 
 export default function FullArticle() {
@@ -70,10 +70,10 @@ export default function FullArticle() {
             <div className="prose prose-lg max-w-none">
               <ReactMarkdown
                 components={{
-                  p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
-                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold my-4" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="text-xl font-bold my-3" {...props} />,
-                  a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />
+                  p: ({node, children, ...props}) => <p className="mb-4 leading-relaxed" {...props}>{children}</p>,
+                  h1: ({node, children, ...props}) => <h1 className="text-2xl font-bold my-4" {...props}>{children}</h1>,
+                  h2: ({node, children, ...props}) => <h2 className="text-xl font-bold my-3" {...props}>{children}</h2>,
+                  a: ({node, children, ...props}) => <a className="text-blue-600 hover:underline" {...props}>{children}</a>
                 }}
               >
                 {article.full_article}
