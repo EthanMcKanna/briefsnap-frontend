@@ -7,6 +7,7 @@ import { Newspaper } from 'lucide-react'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
+import Header from './Header'
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
@@ -110,62 +111,65 @@ export default function BriefSnap() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-3xl">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2">
-            <Newspaper className="h-6 w-6 text-gray-700" />
-            <CardTitle className="text-2xl font-bold">BriefSnap</CardTitle>
-          </div>
-          <CardDescription>Your Daily AI-Powered News Summary</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <h2 className="text-xl font-semibold mb-4">{currentDate}</h2>
-          {loading ? (
-            <div className="text-center text-gray-500">Loading latest summary...</div>
-          ) : error ? (
-            <div className="text-center text-red-500">{error}</div>
-          ) : (
-            <>
-              <ScrollArea className="rounded-md border p-4 bg-gray-50 mb-6">
-                <h3 className="font-semibold mb-2">Summary:</h3>
-                <div className="text-sm text-gray-600 prose prose-sm max-w-none">
-                  <ReactMarkdown>{summary}</ReactMarkdown>
-                </div>
-              </ScrollArea>
-
-              {stories.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-semibold mb-4">Top Stories:</h3>
-                  <div className="space-y-4">
-                    {stories.map((story, index) => (
-                      <div key={index} className="rounded-lg border p-4 bg-white">
-                        <h4 className="font-medium text-gray-900 mb-2">{story.title}</h4>
-                        <p className="text-sm text-gray-600">{story.description}</p>
-                        <button 
-                          className="text-blue-500 hover:underline mt-2"
-                          onClick={() => handleReadMore(index)}
-                        >
-                          Read More
-                        </button>
-                      </div>
-                    ))}
+    <div className="min-h-screen bg-gray-100">
+      <Header />
+      <div className="flex flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-3xl">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <Newspaper className="h-6 w-6 text-gray-700" />
+              <CardTitle className="text-2xl font-bold">Today's Briefing</CardTitle>
+            </div>
+            <CardDescription>Your Daily AI-Powered News Summary</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <h2 className="text-xl font-semibold mb-4">{currentDate}</h2>
+            {loading ? (
+              <div className="text-center text-gray-500">Loading latest summary...</div>
+            ) : error ? (
+              <div className="text-center text-red-500">{error}</div>
+            ) : (
+              <>
+                <ScrollArea className="rounded-md border p-4 bg-gray-50 mb-6">
+                  <h3 className="font-semibold mb-2">Summary:</h3>
+                  <div className="text-sm text-gray-600 prose prose-sm max-w-none">
+                    <ReactMarkdown>{summary}</ReactMarkdown>
                   </div>
-                </div>
-              )}
+                </ScrollArea>
 
-              {timestamp && (
-                <div className="mt-4 text-sm text-gray-500 text-center">
-                  {timestamp}
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-        <CardFooter className="text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} BriefSnap. All rights reserved. Created by <a href="https://www.ethanmckanna.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ethan McKanna</a>.
-        </CardFooter>
-      </Card>
+                {stories.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="font-semibold mb-4">Top Stories:</h3>
+                    <div className="space-y-4">
+                      {stories.map((story, index) => (
+                        <div key={index} className="rounded-lg border p-4 bg-white">
+                          <h4 className="font-medium text-gray-900 mb-2">{story.title}</h4>
+                          <p className="text-sm text-gray-600">{story.description}</p>
+                          <button 
+                            className="text-blue-500 hover:underline mt-2"
+                            onClick={() => handleReadMore(index)}
+                          >
+                            Read More
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {timestamp && (
+                  <div className="mt-4 text-sm text-gray-500 text-center">
+                    {timestamp}
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+          <CardFooter className="text-center text-sm text-gray-500">
+            © {new Date().getFullYear()} BriefSnap. All rights reserved. Created by <a href="https://www.ethanmckanna.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ethan McKanna</a>.
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   )
 }
