@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
-import { Newspaper } from 'lucide-react'
+import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
+import { Spinner } from './ui/Spinner'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
+import { useBookmarks } from '../contexts/BookmarkContext';
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
@@ -15,6 +17,7 @@ export default function BriefSnap() {
   const [timestamp, setTimestamp] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { bookmarks, toggleBookmark } = useBookmarks();
 
   const navigate = useNavigate()
 
@@ -111,42 +114,56 @@ export default function BriefSnap() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       <div className="flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-3xl">
+        <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center space-x-2">
-              <Newspaper className="h-6 w-6 text-gray-700" />
-              <CardTitle className="text-2xl font-bold">Today's Briefing</CardTitle>
+              <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">Today's Briefing</CardTitle>
             </div>
-            <CardDescription>Your Daily AI-Powered News Summary</CardDescription>
+            <CardDescription className="dark:text-gray-400">Your Daily AI-Powered News Summary</CardDescription>
           </CardHeader>
           <CardContent>
-            <h2 className="text-xl font-semibold mb-4">{currentDate}</h2>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">{currentDate}</h2>
             {loading ? (
-              <div className="text-center text-gray-500">Loading latest summary...</div>
+              <div className="flex justify-center p-8">
+                <Spinner size="lg" />
+              </div>
             ) : error ? (
               <div className="text-center text-red-500">{error}</div>
             ) : (
               <>
-                <ScrollArea className="rounded-md border p-4 bg-gray-50 mb-6">
-                  <h3 className="font-semibold mb-2">Summary:</h3>
-                  <div className="text-sm text-gray-600 prose prose-sm max-w-none">
+                <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
+                  <h3 className="font-semibold mb-2 dark:text-white">Summary:</h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown>{summary}</ReactMarkdown>
                   </div>
                 </ScrollArea>
 
                 {stories.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="font-semibold mb-4">Top Stories:</h3>
+                    <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Top Stories:</h3>
                     <div className="space-y-4">
                       {stories.map((story) => (
-                        <div key={story.id} className="rounded-lg border p-4 bg-white">
-                          <h4 className="font-medium text-gray-900 mb-2">{story.title}</h4>
-                          <p className="text-sm text-gray-600">{story.description}</p>
+                        <div key={story.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{story.title}</h4>
+                            <button
+                              onClick={() => toggleBookmark(story)}
+                              className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                            >
+                              {bookmarks.some(b => b.id === story.id) ? (
+                                <BookmarkCheck className="h-5 w-5" />
+                              ) : (
+                                <Bookmark className="h-5 w-5" />
+                              )}
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{story.description}</p>
                           <button 
-                            className="text-blue-500 hover:underline mt-2"
+                            className="text-blue-600 hover:underline mt-2 dark:text-blue-400"
                             onClick={() => handleReadMore(story.id)}
                           >
                             Read More
@@ -165,7 +182,7 @@ export default function BriefSnap() {
               </>
             )}
           </CardContent>
-          <CardFooter className="text-center text-sm text-gray-500">
+          <CardFooter className="text-center text-sm text-gray-500 dark:text-gray-400">
             © {new Date().getFullYear()} BriefSnap. All rights reserved. Created by <a href="https://www.ethanmckanna.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ethan McKanna</a>.
           </CardFooter>
         </Card>
