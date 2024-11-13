@@ -141,13 +141,13 @@ export default function BriefSnap() {
                   <div className="mt-6">
                     <h3 className="font-semibold mb-4">Top Stories:</h3>
                     <div className="space-y-4">
-                      {stories.map((story, index) => (
-                        <div key={index} className="rounded-lg border p-4 bg-white">
+                      {stories.map((story) => (
+                        <div key={story.id} className="rounded-lg border p-4 bg-white">
                           <h4 className="font-medium text-gray-900 mb-2">{story.title}</h4>
                           <p className="text-sm text-gray-600">{story.description}</p>
                           <button 
                             className="text-blue-500 hover:underline mt-2"
-                            onClick={() => handleReadMore(index)}
+                            onClick={() => handleReadMore(story.id)}
                           >
                             Read More
                           </button>

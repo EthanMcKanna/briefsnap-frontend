@@ -35,12 +35,12 @@ export default function FullArticle() {
           const summaryDoc = querySnapshot.docs[0]
           const summaryData = summaryDoc.data()
           
-          const article = summaryData.stories[parseInt(articleId)]
+          const article = summaryData.stories.find(story => story.id === articleId)
           
           if (article) {
             setArticle(article)
           } else {
-            throw new Error('Article not found in the latest summary')
+            throw new Error('Article not found')
           }
         } else {
           throw new Error('No summaries available')
