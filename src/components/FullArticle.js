@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { db } from '../firebase'
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
 
@@ -28,17 +28,24 @@ export default function FullArticle() {
     const fetchArticle = async () => {
       try {
         const summariesRef = collection(db, 'news_summaries')
-        const q = query(summariesRef, orderBy('timestamp', 'desc'), limit(1))
+        const q = query(summariesRef, orderBy('timestamp', 'desc'))
         const querySnapshot = await getDocs(q)
 
         if (!querySnapshot.empty) {
-          const summaryDoc = querySnapshot.docs[0]
-          const summaryData = summaryDoc.data()
+          let foundArticle = null
           
-          const article = summaryData.stories.find(story => story.id === articleId)
+          for (const doc of querySnapshot.docs) {
+            const summaryData = doc.data()
+            const article = summaryData.stories.find(story => story.id === articleId)
+            
+            if (article) {
+              foundArticle = article
+              break
+            }
+          }
           
-          if (article) {
-            setArticle(article)
+          if (foundArticle) {
+            setArticle(foundArticle)
           } else {
             throw new Error('Article not found')
           }
