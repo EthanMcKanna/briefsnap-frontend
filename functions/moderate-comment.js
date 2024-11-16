@@ -1,24 +1,20 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
-const admin = require('firebase-admin');
-const { OpenAI } = require('openai');
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { OpenAI } from 'openai';
 
 let firebaseApp;
-const RATE_LIMIT = 5; // Max requests per minute per user
+const RATE_LIMIT = 5;
 const rateLimits = new Map();
 
 function checkRateLimit(userId) {
   const now = Date.now();
   const userRequests = rateLimits.get(userId) || [];
-  
-  // Remove requests older than 1 minute
   const recentRequests = userRequests.filter(time => now - time < 60000);
-  
+
   if (recentRequests.length >= RATE_LIMIT) {
     return false;
   }
-  
+
   recentRequests.push(now);
   rateLimits.set(userId, recentRequests);
   return true;
@@ -27,15 +23,16 @@ function checkRateLimit(userId) {
 async function initializeFirebase(context) {
   if (!firebaseApp) {
     try {
-      firebaseApp = admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(context.env.FIREBASE_ADMIN_CREDENTIALS))
+      const credentials = JSON.parse(context.env.FIREBASE_ADMIN_CREDENTIALS);
+      firebaseApp = initializeApp({
+        credential: cert(credentials),
       });
     } catch (error) {
       console.error('Firebase initialization error:', error);
       throw new Error('Internal server configuration error');
     }
   }
-  return admin.firestore();
+  return getFirestore(firebaseApp);
 }
 
 export async function onRequest(context) {
@@ -45,7 +42,6 @@ export async function onRequest(context) {
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
-  // Handle preflight requests
   if (context.request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -57,7 +53,6 @@ export async function onRequest(context) {
   try {
     const { text, articleId, user } = await context.request.json();
 
-    // Validate input
     if (!text?.trim() || !articleId || !user?.uid) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
@@ -65,7 +60,6 @@ export async function onRequest(context) {
       );
     }
 
-    // Check rate limit
     if (!checkRateLimit(user.uid)) {
       return new Response(
         JSON.stringify({ error: 'Too many requests. Please try again later.' }),
@@ -73,10 +67,8 @@ export async function onRequest(context) {
       );
     }
 
-    // Initialize Firebase
     const db = await initializeFirebase(context);
 
-    // Content moderation with OpenAI
     try {
       const openai = new OpenAI({ apiKey: context.env.OPENAI_API_KEY });
       const moderation = await openai.moderations.create({ input: text });
@@ -87,7 +79,7 @@ export async function onRequest(context) {
           JSON.stringify({
             flagged: true,
             categories: result.categories,
-            message: 'Content was flagged by moderation'
+            message: 'Content was flagged by moderation',
           }),
           { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
@@ -100,40 +92,32 @@ export async function onRequest(context) {
       );
     }
 
-    // Add comment to Firebase with retries
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        const commentRef = await db.collection('comments').add({
-          content: text.trim(),
-          articleId,
-          userId: user.uid,
-          userName: user.displayName,
-          userPhoto: user.photoURL,
-          timestamp: new Date(),
-          likes: 0,
-          likedBy: []
-        });
+    try {
+      const commentRef = await db.collection('comments').add({
+        content: text.trim(),
+        articleId,
+        userId: user.uid,
+        userName: user.displayName || 'Anonymous',
+        userPhoto: user.photoURL || '',
+        timestamp: new Date(),
+        likes: 0,
+        likedBy: [],
+      });
 
-        return new Response(
-          JSON.stringify({
-            flagged: false,
-            message: 'Comment added successfully',
-            commentId: commentRef.id
-          }),
-          { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      } catch (error) {
-        console.error(`Firebase write error (${retries} retries left):`, error);
-        retries--;
-        if (retries === 0) {
-          throw new Error('Failed to save comment after multiple attempts');
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      return new Response(
+        JSON.stringify({
+          flagged: false,
+          message: 'Comment added successfully',
+          commentId: commentRef.id,
+        }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    } catch (error) {
+      console.error('Firebase write error:', error);
+      throw new Error('Failed to save comment');
     }
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error processing request:', error);
     return new Response(
       JSON.stringify({ error: 'Failed to process request' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
