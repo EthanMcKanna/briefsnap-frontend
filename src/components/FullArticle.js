@@ -41,6 +41,49 @@ export default function FullArticle() {
     });
   };
 
+  const loadComments = useCallback(async () => {
+    if (!articleId) return;
+    setCommentsLoading(true);
+    setCommentsError('');
+    
+    try {
+      const q = query(
+        collection(db, commentsCollection),
+        where('articleId', '==', articleId),
+        orderBy('likes', 'desc'),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      const formattedComments = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          likes: data.likes || 0,
+          likedBy: data.likedBy || [],
+          timestamp: data.timestamp?.toDate() || new Date()
+        };
+      });
+      
+      setComments(formattedComments);
+
+      if (user) {
+        const likes = {};
+        formattedComments.forEach(comment => {
+          likes[comment.id] = comment.likedBy?.includes(user.uid) || false;
+        });
+        setCommentLikes(likes);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      setCommentsError('Failed to load comments');
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [articleId, user]);
+
   useEffect(() => {
     const fetchArticle = async () => {
       try {
@@ -102,53 +145,6 @@ export default function FullArticle() {
       alert('Link copied to clipboard!');
     }
   };
-
-  const loadComments = useCallback(async () => {
-    if (!articleId) return;
-    setCommentsLoading(true);
-    setCommentsError('');
-    
-    try {
-      const q = query(
-        collection(db, commentsCollection),
-        where('articleId', '==', articleId),
-        orderBy('likes', 'desc'),
-        orderBy('timestamp', 'desc')
-      );
-      
-      const snapshot = await getDocs(q);
-      console.log('Comments snapshot:', snapshot.docs.length);
-      
-      const formattedComments = snapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('Comment data:', data);
-        return {
-          id: doc.id,
-          ...data,
-          likes: data.likes || 0,
-          likedBy: data.likedBy || [],
-          timestamp: data.timestamp?.toDate() || new Date()
-        };
-      });
-      
-      console.log('Formatted comments:', formattedComments);
-      setComments(formattedComments);
-
-      // Set initial like states
-      if (user) {
-        const likes = {};
-        formattedComments.forEach(comment => {
-          likes[comment.id] = comment.likedBy?.includes(user.uid) || false;
-        });
-        setCommentLikes(likes);
-      }
-    } catch (error) {
-      console.error('Error loading comments:', error);
-      setCommentsError('Failed to load comments');
-    } finally {
-      setCommentsLoading(false);
-    }
-  }, [articleId, user]); // Add dependencies
 
   const addComment = async (e) => {
     e.preventDefault();
