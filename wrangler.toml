@@ -1,39 +1,25 @@
 name = "briefsnap-frontend"
-main = "src/index.js"
 compatibility_date = "2023-01-01"
 
-[env.production]
-routes = [
-  { pattern = "/api/moderate-comment", function = "moderate-comment" }
-]
+[build]
+command = "cd functions && npm install"
 
-[[functions]]
-pattern = "/api/moderate-comment"
-function = "moderate-comment"
+[functions]
+directory = "functions"
+
+[[functions.import]]
+name = "moderate-comment"
+module = "./functions/moderate-comment.js"
 
 [vars]
 OPENAI_API_KEY = "your-api-key-here"  # Replace with your actual API key
 FIREBASE_ADMIN_CREDENTIALS = "your-firebase-admin-credentials-json-here"
 
-[triggers]
-crons = ["*/5 * * * *"] # Run every 5 minutes to clean up rate limit cache
-
-[[d1_databases]]
-binding = "DB" # For persistent rate limiting (optional)
-database_name = "briefsnap-ratelimits"
-database_id = "xxx"
-
-[build]
-command = "npm install firebase-admin openai"
-
-[build.upload]
-format = "modules"
-main = "./functions/moderate-comment.js"
-dir = "dist"
-
-[[build.external]]
-packages = ["firebase-admin", "openai"]
-
 # For local development:
 [env.development.vars]
 OPENAI_API_KEY = "your-api-key-here"
+
+[env.production]
+routes = [
+  { pattern = "/api/moderate-comment", function = "moderate-comment" }
+]
