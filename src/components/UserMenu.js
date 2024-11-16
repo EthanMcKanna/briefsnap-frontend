@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Settings, LogOut, User } from 'lucide-react';
+import { Settings, LogOut } from 'lucide-react';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();

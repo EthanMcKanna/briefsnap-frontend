@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { db, commentsCollection } from '../firebase'
-import { collection, addDoc, query, orderBy, getDocs, where, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
 import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { useAuth } from '../contexts/AuthContext'
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
+// Remove unused delay function
 export default function FullArticle() {
   const { articleId } = useParams()
   const navigate = useNavigate()
@@ -28,32 +27,7 @@ export default function FullArticle() {
   const [showComments, setShowComments] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
 
-  const checkModeration = async (text) => {
-    try {
-      const response = await fetch('/api/moderate-comment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Moderation request failed');
-      }
-
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      return !result.flagged;
-    } catch (error) {
-      console.error('Moderation error:', error);
-      throw new Error('Content moderation failed');
-    }
-  };
+  // Remove unused checkModeration function since we handle it in the Cloudflare Worker
 
   const processCitations = (text, citations) => {
     if (!citations || !text) return text;
@@ -111,7 +85,7 @@ export default function FullArticle() {
       loadComments();
       setCommentsLoaded(true);
     }
-  }, [showComments]);
+  }, [showComments, commentsLoaded, loadComments]); // Add missing dependencies
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -129,7 +103,7 @@ export default function FullArticle() {
     }
   };
 
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     if (!articleId) return;
     setCommentsLoading(true);
     setCommentsError('');
@@ -174,7 +148,7 @@ export default function FullArticle() {
     } finally {
       setCommentsLoading(false);
     }
-  };
+  }, [articleId, user]); // Add dependencies
 
   const addComment = async (e) => {
     e.preventDefault();
