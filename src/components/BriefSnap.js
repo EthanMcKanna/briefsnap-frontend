@@ -18,7 +18,6 @@ export default function BriefSnap() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { bookmarks, toggleBookmark } = useBookmarks();
-
   const navigate = useNavigate()
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -35,12 +34,12 @@ export default function BriefSnap() {
         const q = query(summariesRef, orderBy('timestamp', 'desc'), limit(1))
         const querySnapshot = await getDocs(q)
 
-        console.log('Query snapshot size:', querySnapshot.size) // Debug log
+        console.log('Query snapshot size:', querySnapshot.size)
 
         if (!querySnapshot.empty) {
           const doc = querySnapshot.docs[0]
           const data = doc.data()
-          console.log('Retrieved document data:', data) // Debug log
+          console.log('Retrieved document data:', data)
 
           if (!data.summary) {
             throw new Error('Summary field is missing from the document')

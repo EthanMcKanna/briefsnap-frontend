@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { db } from '../firebase'
-import { collection, query, orderBy, getDocs } from 'firebase/firestore'
+import { db, commentsCollection } from '../firebase'
+import { collection, addDoc, query, orderBy, getDocs, where, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
-import { Share2, ArrowLeft } from 'lucide-react'
+import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { useAuth } from '../contexts/AuthContext'
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function FullArticle() {
   const { articleId } = useParams()
@@ -14,6 +17,43 @@ export default function FullArticle() {
   const [article, setArticle] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { user } = useAuth();
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commentLikes, setCommentLikes] = useState({});
+  const [moderationError, setModerationError] = useState('');
+  const [showComments, setShowComments] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+
+  const checkModeration = async (text) => {
+    try {
+      const response = await fetch('/api/moderate-comment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Moderation request failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      return !result.flagged;
+    } catch (error) {
+      console.error('Moderation error:', error);
+      throw new Error('Content moderation failed');
+    }
+  };
 
   const processCitations = (text, citations) => {
     if (!citations || !text) return text;
@@ -66,6 +106,13 @@ export default function FullArticle() {
     fetchArticle()
   }, [articleId])
 
+  useEffect(() => {
+    if (showComments && !commentsLoaded) {
+      loadComments();
+      setCommentsLoaded(true);
+    }
+  }, [showComments]);
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -79,6 +126,128 @@ export default function FullArticle() {
     } else {
       navigator.clipboard.writeText(window.location.href);
       alert('Link copied to clipboard!');
+    }
+  };
+
+  const loadComments = async () => {
+    if (!articleId) return;
+    setCommentsLoading(true);
+    setCommentsError('');
+    
+    try {
+      const q = query(
+        collection(db, commentsCollection),
+        where('articleId', '==', articleId),
+        orderBy('likes', 'desc'),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      console.log('Comments snapshot:', snapshot.docs.length);
+      
+      const formattedComments = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Comment data:', data);
+        return {
+          id: doc.id,
+          ...data,
+          likes: data.likes || 0,
+          likedBy: data.likedBy || [],
+          timestamp: data.timestamp?.toDate() || new Date()
+        };
+      });
+      
+      console.log('Formatted comments:', formattedComments);
+      setComments(formattedComments);
+
+      // Set initial like states
+      if (user) {
+        const likes = {};
+        formattedComments.forEach(comment => {
+          likes[comment.id] = comment.likedBy?.includes(user.uid) || false;
+        });
+        setCommentLikes(likes);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      setCommentsError('Failed to load comments');
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const addComment = async (e) => {
+    e.preventDefault();
+    if (!user || !newComment.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setModerationError('');
+
+    try {
+      const response = await fetch('/api/moderate-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: newComment.trim(),
+          articleId,
+          user: {
+            uid: user.uid,
+            displayName: user.displayName,
+            photoURL: user.photoURL
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.flagged) {
+        setModerationError(result.message || 'Your comment violates our community guidelines.');
+        return;
+      }
+
+      setNewComment('');
+      await loadComments();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      setModerationError('Unable to post comment. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const deleteComment = async (commentId) => {
+    if (!user) return;
+    
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, commentsCollection, commentId));
+      await loadComments();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Failed to delete comment. Please try again.');
+    }
+  };
+
+  const toggleLike = async (commentId, currentLikes, likedBy) => {
+    if (!user) return;
+
+    try {
+      const hasLiked = likedBy.includes(user.uid);
+      const newLikedBy = hasLiked 
+        ? likedBy.filter(id => id !== user.uid)
+        : [...likedBy, user.uid];
+
+      await setDoc(doc(db, commentsCollection, commentId), {
+        likes: hasLiked ? currentLikes - 1 : currentLikes + 1,
+        likedBy: newLikedBy
+      }, { merge: true });
+
+      await loadComments();
+    } catch (error) {
+      console.error('Error toggling like:', error);
     }
   };
 
@@ -162,6 +331,143 @@ export default function FullArticle() {
                         </li>
                       ))}
                     </ol>
+                  </div>
+                )}
+                {user && (
+                  <div className="mt-8 border-t pt-8 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-semibold dark:text-gray-100">Comments</h2>
+                      <button
+                        onClick={() => setShowComments(!showComments)}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200
+                          ${showComments 
+                            ? 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100' 
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          } hover:bg-gray-200 dark:hover:bg-gray-600`}
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span>{showComments ? 'Hide Comments' : 'Show Comments'}</span>
+                        {!showComments && comments.length > 0 && (
+                          <span className="ml-2 px-2 py-0.5 bg-blue-500 dark:bg-blue-600 text-white text-sm rounded-full">
+                            {comments.length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {showComments && (
+                      <>
+                        <form onSubmit={addComment} className="mb-6">
+                          <textarea
+                            value={newComment}
+                            onChange={(e) => {
+                              setNewComment(e.target.value);
+                              setModerationError('');
+                            }}
+                            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            placeholder="What are your thoughts?"
+                            rows="3"
+                            disabled={isSubmitting}
+                          />
+                          {moderationError && (
+                            <div className="mt-2 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                              {moderationError}
+                            </div>
+                          )}
+                          <div className="mt-2 flex justify-end">
+                            <button 
+                              type="submit"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                              disabled={isSubmitting || !newComment.trim()}
+                            >
+                              {isSubmitting ? (
+                                <div className="flex items-center space-x-2">
+                                  <Spinner size="sm" />
+                                  <span>Posting...</span>
+                                </div>
+                              ) : (
+                                'Post Comment'
+                              )}
+                            </button>
+                          </div>
+                        </form>
+                        
+                        {commentsError && (
+                          <div className="text-red-500 dark:text-red-400 mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                            {commentsError}
+                          </div>
+                        )}
+                        
+                        {commentsLoading ? (
+                          <div className="flex justify-center p-4">
+                            <Spinner size="md" />
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {comments.length === 0 ? (
+                              <div className="text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <p className="text-gray-500 dark:text-gray-400">
+                                  No comments yet. Be the first to share your thoughts!
+                                </p>
+                              </div>
+                            ) : (
+                              comments.map(comment => (
+                                <div key={comment.id} className="bg-white dark:bg-gray-800/50 rounded-lg p-4 shadow-sm">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center">
+                                      <img 
+                                        src={comment.userPhoto} 
+                                        alt={comment.userName}
+                                        className="w-8 h-8 rounded-full mr-3 border dark:border-gray-700"
+                                      />
+                                      <div>
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                                          {comment.userName}
+                                        </span>
+                                        <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                                          {comment.timestamp?.toLocaleDateString(undefined, {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric'
+                                          })}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <button
+                                        onClick={() => toggleLike(comment.id, comment.likes, comment.likedBy || [])}
+                                        className={`flex items-center space-x-1 px-2 py-1 rounded-md transition-colors duration-200 ${
+                                          commentLikes[comment.id]
+                                            ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        }`}
+                                        disabled={!user}
+                                        title={user ? 'Like comment' : 'Sign in to like comments'}
+                                      >
+                                        <ThumbsUp className="w-4 h-4" />
+                                        <span className="font-medium">{comment.likes || 0}</span>
+                                      </button>
+                                      {user && comment.userId === user.uid && (
+                                        <button
+                                          onClick={() => deleteComment(comment.id)}
+                                          className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                          title="Delete comment"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
+                                    {comment.content}
+                                  </p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </>
