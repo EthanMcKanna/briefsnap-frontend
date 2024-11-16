@@ -1,6 +1,8 @@
-import OpenAI from 'openai';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+const admin = require('firebase-admin');
+const { OpenAI } = require('openai');
 
 let firebaseApp;
 const RATE_LIMIT = 5; // Max requests per minute per user
@@ -25,15 +27,15 @@ function checkRateLimit(userId) {
 async function initializeFirebase(context) {
   if (!firebaseApp) {
     try {
-      firebaseApp = initializeApp({
-        credential: cert(JSON.parse(context.env.FIREBASE_ADMIN_CREDENTIALS))
+      firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert(JSON.parse(context.env.FIREBASE_ADMIN_CREDENTIALS))
       });
     } catch (error) {
       console.error('Firebase initialization error:', error);
       throw new Error('Internal server configuration error');
     }
   }
-  return getFirestore();
+  return admin.firestore();
 }
 
 export async function onRequest(context) {

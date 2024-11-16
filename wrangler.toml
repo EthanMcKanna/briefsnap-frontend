@@ -23,6 +23,17 @@ binding = "DB" # For persistent rate limiting (optional)
 database_name = "briefsnap-ratelimits"
 database_id = "xxx"
 
+[build]
+command = "npm install firebase-admin openai"
+
+[build.upload]
+format = "modules"
+main = "./functions/moderate-comment.js"
+dir = "dist"
+
+[[build.external]]
+packages = ["firebase-admin", "openai"]
+
 # For local development:
 [env.development.vars]
 OPENAI_API_KEY = "your-api-key-here"
