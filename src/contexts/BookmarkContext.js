@@ -44,9 +44,10 @@ export function BookmarkProvider({ children }) {
   const toggleBookmark = async (story) => {
     setBookmarks(prev => {
       try {
-        const newBookmarks = prev.some(b => b.id === story.id)
+        const isBookmarked = prev.some(b => b.id === story.id);
+        const newBookmarks = isBookmarked
           ? prev.filter(b => b.id !== story.id)
-          : [...prev, story];
+          : [...prev, { ...story, bookmarkedAt: new Date().toISOString() }];
 
         localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
         

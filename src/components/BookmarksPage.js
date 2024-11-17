@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Trash2 } from 'lucide-react';
+import { Bookmark, Trash2, ChevronDown } from 'lucide-react';
 import { useBookmarks } from '../contexts/BookmarkContext';
 import Header from './Header';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
@@ -8,6 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 export default function BookmarksPage() {
   const { bookmarks, toggleBookmark } = useBookmarks();
   const navigate = useNavigate();
+  const [sortBy, setSortBy] = useState('newest');
+
+  const sortedBookmarks = useMemo(() => {
+    return [...bookmarks].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt);
+        case 'oldest':
+          return new Date(a.bookmarkedAt) - new Date(b.bookmarkedAt);
+        case 'title':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+  }, [bookmarks, sortBy]);
 
   if (bookmarks.length === 0) {
     return (
@@ -32,14 +48,29 @@ export default function BookmarksPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card className="dark:bg-gray-800/50 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-              <Bookmark className="h-5 w-5 mr-2" />
-              Your Bookmarks
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
+                <Bookmark className="h-5 w-5 mr-2" />
+                Your Bookmarks
+              </CardTitle>
+              
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="title">By Title</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {bookmarks.map((story) => (
+              {sortedBookmarks.map((story) => (
                 <div 
                   key={story.id} 
                   className="flex items-start justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"

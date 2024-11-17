@@ -1,16 +1,15 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { db, commentsCollection } from '../firebase'
 import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
-import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck } from 'lucide-react'
+import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, ChevronDown } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { useAuth } from '../contexts/AuthContext'
 import { useBookmarks } from '../contexts/BookmarkContext'
 
-// Remove unused delay function
 export default function FullArticle() {
   const { articleId } = useParams()
   const navigate = useNavigate()
@@ -28,8 +27,12 @@ export default function FullArticle() {
   const [showComments, setShowComments] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const { bookmarks, toggleBookmark } = useBookmarks();
+  const [sortBy, setSortBy] = useState('likes');
+  const [readingTime, setReadingTime] = useState(0);
+  const [likingComments, setLikingComments] = useState({});
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef(null);
 
-  // Remove unused checkModeration function since we handle it in the Cloudflare Worker
 
   const processCitations = (text, citations) => {
     if (!citations || !text) return text;
@@ -43,6 +46,12 @@ export default function FullArticle() {
     });
   };
 
+  const calculateReadingTime = (text) => {
+    const wordsPerMinute = 200;
+    const words = text.trim().split(/\s+/).length;
+    return Math.ceil(words / wordsPerMinute);
+  };
+
   const loadComments = useCallback(async () => {
     if (!articleId) return;
     setCommentsLoading(true);
@@ -52,8 +61,7 @@ export default function FullArticle() {
       const q = query(
         collection(db, commentsCollection),
         where('articleId', '==', articleId),
-        orderBy('likes', 'desc'),
-        orderBy('timestamp', 'desc')
+        orderBy(sortBy === 'likes' ? 'likes' : 'timestamp', sortBy === 'likes' ? 'desc' : 'desc')
       );
       
       const snapshot = await getDocs(q);
@@ -65,6 +73,7 @@ export default function FullArticle() {
           ...data,
           likes: data.likes || 0,
           likedBy: data.likedBy || [],
+          replyCount: data.replyCount || 0,
           timestamp: data.timestamp?.toDate() || new Date()
         };
       });
@@ -84,7 +93,7 @@ export default function FullArticle() {
     } finally {
       setCommentsLoading(false);
     }
-  }, [articleId, user]);
+  }, [articleId, user, sortBy]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -107,7 +116,8 @@ export default function FullArticle() {
           }
           
           if (foundArticle) {
-            setArticle(foundArticle)
+            setArticle(foundArticle);
+            setReadingTime(calculateReadingTime(foundArticle.full_article));
           } else {
             throw new Error('Article not found')
           }
@@ -130,7 +140,24 @@ export default function FullArticle() {
       loadComments();
       setCommentsLoaded(true);
     }
-  }, [showComments, commentsLoaded, loadComments]); // Add missing dependencies
+  }, [showComments, commentsLoaded, loadComments]);
+
+  useEffect(() => {
+    if (commentsLoaded) {
+      loadComments();
+    }
+  }, [sortBy, loadComments, commentsLoaded]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target)) {
+        setSortMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -204,8 +231,9 @@ export default function FullArticle() {
   };
 
   const toggleLike = async (commentId, currentLikes, likedBy) => {
-    if (!user) return;
+    if (!user || likingComments[commentId]) return;
 
+    setLikingComments(prev => ({ ...prev, [commentId]: true }));
     try {
       const hasLiked = likedBy.includes(user.uid);
       const newLikedBy = hasLiked 
@@ -217,11 +245,79 @@ export default function FullArticle() {
         likedBy: newLikedBy
       }, { merge: true });
 
-      await loadComments();
+      setComments(prev => prev.map(comment => {
+        if (comment.id === commentId) {
+          return {
+            ...comment,
+            likes: hasLiked ? currentLikes - 1 : currentLikes + 1,
+            likedBy: newLikedBy
+          };
+        }
+        return comment;
+      }));
+
+      setCommentLikes(prev => ({
+        ...prev,
+        [commentId]: !hasLiked
+      }));
     } catch (error) {
       console.error('Error toggling like:', error);
+    } finally {
+      setLikingComments(prev => ({ ...prev, [commentId]: false }));
     }
   };
+
+  const SortMenu = () => (
+    <div ref={sortMenuRef} className="relative">
+      <button
+        onClick={() => setSortMenuOpen(!sortMenuOpen)}
+        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 
+          border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 
+          transition-colors duration-200"
+      >
+        <span className="text-gray-700 dark:text-gray-300">
+          Sort by: {sortBy === 'likes' ? 'Most Liked' : 'Newest'}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-500 transform transition-transform duration-200
+          ${sortMenuOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {sortMenuOpen && (
+        <div 
+          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 
+            ring-1 ring-black ring-opacity-5 z-50"
+        >
+          <div className="py-1" role="menu">
+            {[
+              { value: 'likes', label: 'Most Liked' },
+              { value: 'newest', label: 'Newest' }
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSortBy(value);
+                  setSortMenuOpen(false);
+                }}
+                className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200
+                  ${sortBy === value
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const processedContent = useMemo(() => {
+    if (!article?.full_article) return '';
+    return processCitations(article.full_article, article.citations);
+  }, [article]);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -269,6 +365,11 @@ export default function FullArticle() {
                 {article.title}
               </CardTitle>
             )}
+            {!loading && !error && (
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                {readingTime} min read
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -279,25 +380,37 @@ export default function FullArticle() {
               <div className="text-center text-red-500">{error}</div>
             ) : (
               <>
-                <div className="prose prose-lg dark:prose-invert max-w-none">
+                <div className="prose prose-lg dark:prose-invert max-w-none select-text">
                   <ReactMarkdown
                     components={{
-                      p: ({node, children, ...props}) => <p className="mb-4 leading-relaxed dark:text-gray-300" {...props}>{children}</p>,
-                      h1: ({node, children, ...props}) => <h1 className="text-2xl font-bold my-4 dark:text-gray-100" {...props}>{children}</h1>,
-                      h2: ({node, children, ...props}) => <h2 className="text-xl font-bold my-3 dark:text-gray-200" {...props}>{children}</h2>,
-                      a: ({node, children, ...props}) => (
+                      p: ({children}) => (
+                        <p className="mb-4 leading-relaxed dark:text-gray-300 select-text">
+                          {children}
+                        </p>
+                      ),
+                      h1: ({children}) => (
+                        <h1 className="text-2xl font-bold my-4 dark:text-gray-100 select-text">
+                          {children}
+                        </h1>
+                      ),
+                      h2: ({children}) => (
+                        <h2 className="text-xl font-bold my-3 dark:text-gray-200 select-text">
+                          {children}
+                        </h2>
+                      ),
+                      a: ({href, children}) => (
                         <a 
-                          className="text-blue-600 hover:underline inline-block dark:text-blue-400"
+                          href={href}
+                          className="text-blue-600 hover:underline dark:text-blue-400 select-text"
                           target="_blank"
-                          rel="noopener noreferrer" 
-                          {...props}
+                          rel="noopener noreferrer"
                         >
                           {children}
                         </a>
                       )
                     }}
                   >
-                    {processCitations(article.full_article, article.citations)}
+                    {processedContent}
                   </ReactMarkdown>
                 </div>
                 
@@ -344,27 +457,34 @@ export default function FullArticle() {
 
                     {showComments && (
                       <>
-                        <form onSubmit={addComment} className="mb-6">
-                          <textarea
-                            value={newComment}
-                            onChange={(e) => {
-                              setNewComment(e.target.value);
-                              setModerationError('');
-                            }}
-                            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                            placeholder="What are your thoughts?"
-                            rows="3"
-                            disabled={isSubmitting}
-                          />
-                          {moderationError && (
-                            <div className="mt-2 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                              {moderationError}
-                            </div>
-                          )}
-                          <div className="mt-2 flex justify-end">
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="flex items-center space-x-4">
+                            <h2 className="text-xl font-semibold dark:text-gray-100">
+                              Comments {comments.length > 0 && `(${comments.length})`}
+                            </h2>
+                            <SortMenu />
+                          </div>
+                        </div>
+                        
+                        <form onSubmit={addComment} className="mb-8">
+                          <div className="relative">
+                            <textarea
+                              value={newComment}
+                              onChange={(e) => {
+                                setNewComment(e.target.value);
+                                setModerationError('');
+                              }}
+                              className="w-full p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 
+                                dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                dark:focus:ring-blue-400 pr-24"
+                              placeholder="What are your thoughts?"
+                              rows="3"
+                              disabled={isSubmitting}
+                            />
                             <button 
                               type="submit"
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                              className="absolute bottom-3 right-3 px-4 py-2 bg-blue-600 text-white rounded-lg 
+                                hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                               disabled={isSubmitting || !newComment.trim()}
                             >
                               {isSubmitting ? (
@@ -373,12 +493,17 @@ export default function FullArticle() {
                                   <span>Posting...</span>
                                 </div>
                               ) : (
-                                'Post Comment'
+                                'Post'
                               )}
                             </button>
                           </div>
+                          {moderationError && (
+                            <div className="mt-2 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                              {moderationError}
+                            </div>
+                          )}
                         </form>
-                        
+
                         {commentsError && (
                           <div className="text-red-500 dark:text-red-400 mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                             {commentsError}
@@ -399,7 +524,11 @@ export default function FullArticle() {
                               </div>
                             ) : (
                               comments.map(comment => (
-                                <div key={comment.id} className="bg-white dark:bg-gray-800/50 rounded-lg p-4 shadow-sm">
+                                <div 
+                                  key={comment.id} 
+                                  className="bg-white dark:bg-gray-800/50 rounded-lg p-4 shadow-sm 
+                                    transition-shadow duration-200 hover:shadow-md"
+                                >
                                   <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center">
                                       <img 
@@ -423,21 +552,23 @@ export default function FullArticle() {
                                     <div className="flex items-center space-x-2">
                                       <button
                                         onClick={() => toggleLike(comment.id, comment.likes, comment.likedBy || [])}
-                                        className={`flex items-center space-x-1 px-2 py-1 rounded-md transition-colors duration-200 ${
-                                          commentLikes[comment.id]
+                                        className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all duration-200 
+                                          ${commentLikes[comment.id]
                                             ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                                             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        }`}
-                                        disabled={!user}
+                                          } ${likingComments[comment.id] ? 'opacity-50 cursor-wait' : ''}`}
+                                        disabled={!user || likingComments[comment.id]}
                                         title={user ? 'Like comment' : 'Sign in to like comments'}
                                       >
-                                        <ThumbsUp className="w-4 h-4" />
+                                        <ThumbsUp className={`w-4 h-4 ${likingComments[comment.id] ? 'animate-pulse' : ''}`} />
                                         <span className="font-medium">{comment.likes || 0}</span>
                                       </button>
                                       {user && comment.userId === user.uid && (
                                         <button
                                           onClick={() => deleteComment(comment.id)}
-                                          className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                          className="p-1.5 text-gray-400 hover:text-red-500 dark:text-gray-500 
+                                            dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 
+                                            transition-colors duration-200"
                                           title="Delete comment"
                                         >
                                           <Trash2 className="w-4 h-4" />
