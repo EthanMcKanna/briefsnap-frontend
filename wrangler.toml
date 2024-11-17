@@ -1,5 +1,6 @@
 name = "firebase-cloudflare-function"
 compatibility_date = "2023-01-01"
+pages_build_output_dir = "./build"
 nodejs_compat = true
 node_compat = true
 
@@ -7,15 +8,10 @@ node_compat = true
 OPENAI_API_KEY = "${OPENAI_API_KEY}"
 FIREBASE_ADMIN_CREDENTIALS = "${FIREBASE_ADMIN_CREDENTIALS}"
 
-[[workers.dev]]
-account_id = "81f9092cf8df87e41d0c4d5ac9cc7244"
-route = "https://ethanmckanna.workers.dev/*"
-zone_id = "c14b0d5eac7306dcb9030fccebe44a18"
-
 [build]
 command = "npm run build"
-upload = { format = "service-workers" }
 
-[build.upload]
-dir = "build"
-main = "index.js"
+# Add separate preview environment config if needed
+[env.preview.vars]
+OPENAI_API_KEY = "${OPENAI_API_KEY}"
+FIREBASE_ADMIN_CREDENTIALS = "${FIREBASE_ADMIN_CREDENTIALS}"
