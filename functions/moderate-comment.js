@@ -1,10 +1,14 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { OpenAI } from 'openai';
-import { Buffer, process } from './polyfills.js';
+import { Buffer, process, Readable, Writable, Transform, inherits } from './polyfills.js';
 
 globalThis.Buffer = Buffer;
 globalThis.process = process;
+globalThis.Readable = Readable;
+globalThis.Writable = Writable;
+globalThis.Transform = Transform;
+globalThis.inherits = inherits;
 
 let firebaseApp;
 const RATE_LIMIT = 5;
@@ -129,5 +133,9 @@ export async function onRequest(context) {
       JSON.stringify({ error: 'Failed to process request' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
+    );
+  }
+}
+
   }
 }

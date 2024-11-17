@@ -19,9 +19,8 @@ build({
   },
   inject: ['./functions/polyfills.js'],
   alias: {
-    'buffer': 'node:buffer',
-    'stream': 'node:stream',
-    'util': 'node:util',
+    'buffer': 'buffer',
+    'util': 'util',
   },
-  minify: true
-}).catch(() => process.exit(1));
+  },
+  minify: true}).catch(() => process.exit(1));
