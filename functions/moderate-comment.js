@@ -3,8 +3,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { OpenAI } from 'openai';
 import { Buffer, process } from './polyfills.js';
 
-global.Buffer = Buffer;
-global.process = process;
+globalThis.Buffer = Buffer;
+globalThis.process = process;
 
 let firebaseApp;
 const RATE_LIMIT = 5;
