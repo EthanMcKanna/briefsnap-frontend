@@ -1,6 +1,6 @@
-import { initializeApp, cert } from 'node:firebase-admin/app';
-import { getFirestore } from 'node:firebase-admin/firestore';
-import { OpenAI } from 'node:openai';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { OpenAI } from 'openai';
 
 let firebaseApp;
 const RATE_LIMIT = 5;
