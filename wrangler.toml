@@ -4,8 +4,8 @@ nodejs_compat = true
 node_compat = true
 
 [vars]
-OPENAI_API_KEY=process.env.OPENAI_API_KEY
-FIREBASE_ADMIN_CREDENTIALS=process.env.FIREBASE_ADMIN_CREDENTIALS
+OPENAI_API_KEY = "${OPENAI_API_KEY}"
+FIREBASE_ADMIN_CREDENTIALS = "${FIREBASE_ADMIN_CREDENTIALS}"
 
 [[workers.dev]]
 account_id = "81f9092cf8df87e41d0c4d5ac9cc7244"
