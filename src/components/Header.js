@@ -29,7 +29,14 @@ export default function Header() {
               <UserMenu />
             ) : (
               <button
-                onClick={login}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await login();
+                  } catch (error) {
+                    console.error('Sign in failed:', error);
+                  }
+                }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
                 Sign In

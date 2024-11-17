@@ -56,10 +56,17 @@ export function AuthProvider({ children }) {
 
   const login = async () => {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      return result.user;
     } catch (error) {
-      console.error('Login error:', error);
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error('Login error:', error);
+      }
+      throw error;
     }
   };
 
