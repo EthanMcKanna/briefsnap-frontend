@@ -5,8 +5,8 @@ build({
   bundle: true,
   format: 'esm',
   outfile: './dist/moderate-comment.js',
-  platform: 'browser',
-  target: 'es2020',
+  platform: 'node',
+  target: 'node18',
   external: [
     'firebase-admin',
     'firebase-admin/*',
@@ -19,9 +19,9 @@ build({
   },
   inject: ['./functions/polyfills.js'],
   alias: {
-    buffer: './functions/polyfills.js',
-    stream: './functions/polyfills.js',
-    util: './functions/polyfills.js',
+    'buffer': 'node:buffer',
+    'stream': 'node:stream',
+    'util': 'node:util',
   },
   minify: true
 }).catch(() => process.exit(1));

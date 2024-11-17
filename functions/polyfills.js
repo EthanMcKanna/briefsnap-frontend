@@ -1,5 +1,4 @@
-
-export const Buffer = {
+export const Buffer = globalThis.Buffer || {
   from: (data) => new TextEncoder().encode(data),
   alloc: (size) => new Uint8Array(size),
   concat: (chunks) => {
@@ -14,9 +13,9 @@ export const Buffer = {
   },
 };
 
-export const process = {
+export const process = globalThis.process || {
   env: { NODE_ENV: 'production' },
 };
 
-export const stream = { Readable: class {}, Writable: class {}, Transform: class {} };
-export const util = { inherits: () => {} };
+export const stream = globalThis.stream || { Readable: class {}, Writable: class {}, Transform: class {} };
+export const util = globalThis.util || { inherits: () => {} };
