@@ -1,6 +1,10 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { OpenAI } from 'openai';
+import { Buffer, process } from './polyfills.js';
+
+global.Buffer = Buffer;
+global.process = process;
 
 let firebaseApp;
 const RATE_LIMIT = 5;

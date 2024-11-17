@@ -5,7 +5,7 @@ build({
   bundle: true,
   format: 'esm',
   outfile: './dist/moderate-comment.js',
-  platform: 'neutral',
+  platform: 'browser',
   target: 'es2020',
   external: [
     'firebase-admin',
@@ -14,7 +14,14 @@ build({
     'openai'
   ],
   define: {
-    'process.env.NODE_ENV': '"production"'
+    'process.env.NODE_ENV': '"production"',
+    'global': 'globalThis',
+  },
+  inject: ['./functions/polyfills.js'],
+  alias: {
+    buffer: './functions/polyfills.js',
+    stream: './functions/polyfills.js',
+    util: './functions/polyfills.js',
   },
   minify: true
 }).catch(() => process.exit(1));
