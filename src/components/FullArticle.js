@@ -5,9 +5,10 @@ import { db, commentsCollection } from '../firebase'
 import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
-import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle } from 'lucide-react'
+import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { useAuth } from '../contexts/AuthContext'
+import { useBookmarks } from '../contexts/BookmarkContext'
 
 // Remove unused delay function
 export default function FullArticle() {
@@ -26,6 +27,7 @@ export default function FullArticle() {
   const [moderationError, setModerationError] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const { bookmarks, toggleBookmark } = useBookmarks();
 
   // Remove unused checkModeration function since we handle it in the Cloudflare Worker
 
@@ -233,13 +235,28 @@ export default function FullArticle() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </button>
-          <button
-            onClick={handleShare}
-            className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share
-          </button>
+          <div className="flex items-center space-x-4">
+            {article && (
+              <button
+                onClick={() => toggleBookmark(article)}
+                className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                {bookmarks.some(b => b.id === article.id) ? (
+                  <BookmarkCheck className="w-4 h-4 mr-2" />
+                ) : (
+                  <Bookmark className="w-4 h-4 mr-2" />
+                )}
+                {bookmarks.some(b => b.id === article.id) ? 'Bookmarked' : 'Bookmark'}
+              </button>
+            )}
+            <button
+              onClick={handleShare}
+              className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </button>
+          </div>
         </div>
         <Card className="w-full max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
