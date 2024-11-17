@@ -6,14 +6,16 @@ import { db, userCollection } from '../firebase';
 
 const AuthContext = createContext();
 
+const defaultPreferences = {
+  emailNotifications: true,
+  theme: 'system',
+  articleLanguage: 'en'
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userPreferences, setUserPreferences] = useState({
-    emailNotifications: true,
-    theme: 'system',
-    articleLanguage: 'en'
-  });
+  const [userPreferences, setUserPreferences] = useState(defaultPreferences);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -21,14 +23,14 @@ export function AuthProvider({ children }) {
         // Load user profile and preferences
         const userDoc = await getDoc(doc(db, userCollection, user.uid));
         if (userDoc.exists()) {
-          setUserPreferences(userDoc.data().preferences || {});
+          setUserPreferences(userDoc.data().preferences || defaultPreferences);
         } else {
           // Create new user profile
           await setDoc(doc(db, userCollection, user.uid), {
             email: user.email,
             name: user.displayName,
             photoURL: user.photoURL,
-            preferences: userPreferences,
+            preferences: defaultPreferences,
             createdAt: new Date()
           });
         }
