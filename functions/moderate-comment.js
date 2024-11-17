@@ -1,6 +1,6 @@
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { OpenAI } from 'openai';
+import { initializeApp, cert } from 'node:firebase-admin/app';
+import { getFirestore } from 'node:firebase-admin/firestore';
+import { OpenAI } from 'node:openai';
 
 let firebaseApp;
 const RATE_LIMIT = 5;
@@ -26,6 +26,9 @@ async function initializeFirebase(context) {
       const credentials = JSON.parse(context.env.FIREBASE_ADMIN_CREDENTIALS);
       firebaseApp = initializeApp({
         credential: cert(credentials),
+        // Add explicit Node.js environment settings
+        projectId: credentials.project_id,
+        databaseURL: `https://${credentials.project_id}.firebaseio.com`,
       });
     } catch (error) {
       console.error('Firebase initialization error:', error);
