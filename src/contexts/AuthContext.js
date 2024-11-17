@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
     return unsubscribe;
-  }, [userPreferences]); // Add missing dependency
+  }, []); // Removed userPreferences from dependencies
 
   const updatePreferences = async (newPreferences) => {
     if (!user) return;
