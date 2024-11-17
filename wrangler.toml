@@ -1,10 +1,11 @@
 name = "firebase-cloudflare-function"
-type = "javascript"
+compatibility_date = "2023-01-01"
+nodejs_compat = true
 node_compat = true
 
 [vars]
-OPENAI_API_KEY=process.env.OPENAI_API_KEY,
-FIREBASE_ADMIN_CREDENTIALS=process.env.FIREBASE_ADMIN_CREDENTIALS,
+OPENAI_API_KEY=process.env.OPENAI_API_KEY
+FIREBASE_ADMIN_CREDENTIALS=process.env.FIREBASE_ADMIN_CREDENTIALS
 
 [[workers.dev]]
 account_id = "81f9092cf8df87e41d0c4d5ac9cc7244"
@@ -18,6 +19,3 @@ upload = { format = "service-workers" }
 [build.upload]
 dir = "build"
 main = "index.js"
-
-[compatibility_flags]
-nodejs_compat = true
