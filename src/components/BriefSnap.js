@@ -1,7 +1,7 @@
 // src/components/BriefSnap.js
 import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
 import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
@@ -39,9 +39,6 @@ export default function BriefSnap() {
           const doc = summarySnapshot.docs[0];
           const data = doc.data();
           setSummary(data.summary || '');
-          if (data.timestamp?.toDate) {
-            setTimestamp(`Last updated: ${formatDate(data.timestamp.toDate())}`);
-          }
         }
 
         // Fetch articles
