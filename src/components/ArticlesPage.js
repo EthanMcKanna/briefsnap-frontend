@@ -61,7 +61,7 @@ export default function ArticlesPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []); // Empty dependency array since it doesn't depend on any state/props
+  }, [lastDoc]); // Add lastDoc to dependencies
 
   useEffect(() => {
     fetchArticles(true);
