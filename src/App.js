@@ -4,6 +4,8 @@ import FullArticle from './components/FullArticle';
 import BookmarksPage from './components/BookmarksPage';
 import UserSettings from './components/UserSettings';
 import ArticlesPage from './components/ArticlesPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BookmarkProvider } from './contexts/BookmarkContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -21,6 +23,8 @@ function App() {
               <Route path="/bookmarks" element={<BookmarksPage />} />
               <Route path="/settings" element={<UserSettings />} />
               <Route path="/articles" element={<ArticlesPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
             </Routes>
           </BrowserRouter>
         </BookmarkProvider>
