@@ -6,7 +6,7 @@ import { ScrollArea } from "./ui/ScrollArea"
 import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { db } from '../firebase'
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, limit, getDocs, where, Timestamp } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import { useBookmarks } from '../contexts/BookmarkContext';
@@ -17,6 +17,8 @@ export default function BriefSnap() {
   const [timestamp, setTimestamp] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [articles, setArticles] = useState([])
+  const [filteredArticles, setFilteredArticles] = useState([])
   const { bookmarks, toggleBookmark } = useBookmarks();
   const navigate = useNavigate()
 
@@ -28,55 +30,51 @@ export default function BriefSnap() {
   })
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchSummaryAndArticles = async () => {
+      setLoading(true);
       try {
-        const summariesRef = collection(db, 'news_summaries')
-        const q = query(summariesRef, orderBy('timestamp', 'desc'), limit(1))
-        const querySnapshot = await getDocs(q)
+        // Fetch summary
+        const summariesRef = collection(db, 'news_summaries');
+        const summaryQuery = query(summariesRef, orderBy('timestamp', 'desc'), limit(1));
+        const summarySnapshot = await getDocs(summaryQuery);
 
-        console.log('Query snapshot size:', querySnapshot.size)
-
-        if (!querySnapshot.empty) {
-          const doc = querySnapshot.docs[0]
-          const data = doc.data()
-          console.log('Retrieved document data:', data)
-
-          if (!data.summary) {
-            throw new Error('Summary field is missing from the document')
+        if (!summarySnapshot.empty) {
+          const doc = summarySnapshot.docs[0];
+          const data = doc.data();
+          setSummary(data.summary || '');
+          if (data.timestamp?.toDate) {
+            setTimestamp(`Last updated: ${formatDate(data.timestamp.toDate())}`);
           }
-
-          setSummary(data.summary)
-          setStories(data.stories || [])
-          
-          if (data.timestamp) {
-            if (data.timestamp.toDate) {
-              const date = data.timestamp.toDate()
-              setTimestamp(`Last updated: ${formatDate(date)}`)
-            } else {
-              console.error('Timestamp is not a Firestore timestamp:', data.timestamp)
-              setTimestamp(`Last updated: Unknown`)
-            }
-          } else {
-            setTimestamp('No timestamp available')
-          }
-        } else {
-          console.error('No documents found in the collection')
-          setSummary("No summaries available. Please check back later.")
-          setStories([])
-          setTimestamp('')
         }
-      } catch (err) {
-        console.error("Error fetching summary:", err)
-        setError(`Failed to load the latest summary: ${err.message}`)
-        setSummary("")
-        setStories([])
-      } finally {
-        setLoading(false)
-      }
-    }
 
-    fetchSummary()
-  }, [])
+        // Fetch articles
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const articlesRef = collection(db, 'articles');
+        const articlesQuery = query(
+          articlesRef,
+          where('timestamp', '>=', Timestamp.fromDate(today)),
+          orderBy('timestamp', 'desc')
+        );
+        
+        const articlesSnapshot = await getDocs(articlesQuery);
+        const articlesData = articlesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setArticles(articlesData);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError("Failed to load content");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSummaryAndArticles();
+  }, []);
 
   // Helper function to format date with relative time
   const formatDate = (date) => {
@@ -141,51 +139,45 @@ export default function BriefSnap() {
                   </div>
                 </ScrollArea>
 
-                {stories.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Top Stories:</h3>
-                    <div className="space-y-4">
-                      {stories.map((story) => (
-                        <div key={story.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{story.title}</h4>
-                            <button
-                              onClick={() => toggleBookmark(story)}
-                              className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                            >
-                              {bookmarks.some(b => b.id === story.id) ? (
-                                <BookmarkCheck className="h-5 w-5" />
-                              ) : (
-                                <Bookmark className="h-5 w-5" />
-                              )}
-                            </button>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{story.description}</p>
-                          <button 
-                            className="text-blue-600 hover:underline mt-2 dark:text-blue-400"
-                            onClick={() => handleReadMore(story.id)}
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Today's Stories:</h3>
+                  <div className="space-y-4">
+                    {articles.map((article) => (
+                      <div key={article.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
+                          <button
+                            onClick={() => toggleBookmark(article)}
+                            className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                           >
-                            Read More
+                            {bookmarks.some(b => b.id === article.id) ? (
+                              <BookmarkCheck className="h-5 w-5" />
+                            ) : (
+                              <Bookmark className="h-5 w-5" />
+                            )}
                           </button>
                         </div>
-                      ))}
-                    </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
+                        <button 
+                          className="text-blue-600 hover:underline mt-2 dark:text-blue-400"
+                          onClick={() => handleReadMore(article.id)}
+                        >
+                          Read More
+                        </button>
+                      </div>
+                    ))}
+                    {articles.length === 0 && (
+                      <div className="text-center p-6 text-gray-500 dark:text-gray-400">
+                        No articles available for today.
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {timestamp && (
-                  <div className="mt-4 text-sm text-gray-500 text-center">
-                    {timestamp}
-                  </div>
-                )}
+                </div>
               </>
             )}
           </CardContent>
-          <CardFooter className="text-center text-sm text-gray-500 dark:text-gray-400">
-            © {new Date().getFullYear()} BriefSnap. All rights reserved. Created by <a href="https://www.ethanmckanna.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ethan McKanna</a>.
-          </CardFooter>
         </Card>
       </div>
     </div>
-  )
+  );
 }

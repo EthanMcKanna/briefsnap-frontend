@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Newspaper } from 'lucide-react';
 import UserMenu from './UserMenu';
 
 export default function Header() {
@@ -17,12 +17,20 @@ export default function Header() {
 
           <div className="flex items-center space-x-4">
             {user && (
-              <Link
-                to="/bookmarks"
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                <Bookmark className="h-5 w-5" />
-              </Link>
+              <>
+                <Link
+                  to="/articles"
+                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  <Newspaper className="h-5 w-5" />
+                </Link>
+                <Link
+                  to="/bookmarks"
+                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  <Bookmark className="h-5 w-5" />
+                </Link>
+              </>
             )}
 
             {user ? (

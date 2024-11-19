@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { db, commentsCollection } from '../firebase'
-import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
 import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, ChevronDown } from 'lucide-react'
@@ -97,43 +97,39 @@ export default function FullArticle() {
 
   useEffect(() => {
     const fetchArticle = async () => {
+      if (!articleId) return;
+      
+      setLoading(true);
+      setError('');
+      
       try {
-        const summariesRef = collection(db, 'news_summaries')
-        const q = query(summariesRef, orderBy('timestamp', 'desc'))
-        const querySnapshot = await getDocs(q)
-
+        const articlesRef = collection(db, 'articles');
+        const q = query(articlesRef, where('id', '==', articleId));
+        const querySnapshot = await getDocs(q);
+        
         if (!querySnapshot.empty) {
-          let foundArticle = null
+          const articleDoc = querySnapshot.docs[0];
+          const articleData = articleDoc.data();
+          setArticle({ ...articleData, docId: articleDoc.id });
           
-          for (const doc of querySnapshot.docs) {
-            const summaryData = doc.data()
-            const article = summaryData.stories.find(story => story.id === articleId)
-            
-            if (article) {
-              foundArticle = article
-              break
-            }
-          }
-          
-          if (foundArticle) {
-            setArticle(foundArticle);
-            setReadingTime(calculateReadingTime(foundArticle.full_article));
-          } else {
-            throw new Error('Article not found')
+          // Calculate reading time when article is loaded
+          if (articleData.full_article) {
+            const time = calculateReadingTime(articleData.full_article);
+            setReadingTime(time);
           }
         } else {
-          throw new Error('No summaries available')
+          setError('Article not found. Please check the URL and try again.');
         }
       } catch (err) {
-        console.error("Error fetching article:", err)
-        setError(`Failed to load the article: ${err.message}`)
+        console.error("Error fetching article:", err);
+        setError('Failed to load the article. Please try again later.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchArticle()
-  }, [articleId])
+    fetchArticle();
+  }, [articleId]);
 
   useEffect(() => {
     if (showComments && !commentsLoaded) {

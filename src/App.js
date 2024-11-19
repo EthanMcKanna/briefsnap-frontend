@@ -3,6 +3,7 @@ import BriefSnap from './components/BriefSnap';
 import FullArticle from './components/FullArticle';
 import BookmarksPage from './components/BookmarksPage';
 import UserSettings from './components/UserSettings';
+import ArticlesPage from './components/ArticlesPage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BookmarkProvider } from './contexts/BookmarkContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -19,6 +20,7 @@ function App() {
               <Route path="/article/:articleId" element={<FullArticle />} />
               <Route path="/bookmarks" element={<BookmarksPage />} />
               <Route path="/settings" element={<UserSettings />} />
+              <Route path="/articles" element={<ArticlesPage />} />
             </Routes>
           </BrowserRouter>
         </BookmarkProvider>
