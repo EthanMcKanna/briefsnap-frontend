@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore';
@@ -19,7 +19,7 @@ export default function ArticlesPage() {
   const { bookmarks, toggleBookmark } = useBookmarks();
   const ARTICLES_PER_PAGE = 10;
 
-  const fetchArticles = async (isInitial = false) => {
+  const fetchArticles = useCallback(async (isInitial = false) => {
     try {
       const articlesRef = collection(db, 'articles');
       let q;
@@ -61,11 +61,11 @@ export default function ArticlesPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, []); // Empty dependency array since it doesn't depend on any state/props
 
   useEffect(() => {
     fetchArticles(true);
-  }, []);
+  }, [fetchArticles]);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;

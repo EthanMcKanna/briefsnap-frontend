@@ -1,7 +1,7 @@
 // src/components/BriefSnap.js
 import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/Card"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
 import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
@@ -13,12 +13,9 @@ import { useBookmarks } from '../contexts/BookmarkContext';
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
-  const [stories, setStories] = useState([])
-  const [timestamp, setTimestamp] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [articles, setArticles] = useState([])
-  const [filteredArticles, setFilteredArticles] = useState([])
   const { bookmarks, toggleBookmark } = useBookmarks();
   const navigate = useNavigate()
 

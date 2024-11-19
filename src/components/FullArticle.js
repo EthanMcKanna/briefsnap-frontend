@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { db, commentsCollection } from '../firebase'
-import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
 import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, ChevronDown } from 'lucide-react'
