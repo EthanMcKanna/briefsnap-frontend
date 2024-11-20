@@ -8,7 +8,7 @@ export default function Header() {
   const { user, login } = useAuth();
 
   return (
-    <header className="border-b dark:border-gray-800 bg-white dark:bg-gray-900">
+    <header className="border-b dark:border-gray-800 bg-white dark:bg-gray-900 relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="text-xl font-bold text-gray-900 dark:text-white">
