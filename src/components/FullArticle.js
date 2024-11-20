@@ -10,6 +10,7 @@ import { Spinner } from './ui/Spinner'
 import { useAuth } from '../contexts/AuthContext'
 import { useBookmarks } from '../contexts/BookmarkContext'
 import Footer from './Footer';
+import { Helmet } from 'react-helmet-async';
 
 export default function FullArticle() {
   const { articleId } = useParams()
@@ -318,6 +319,23 @@ export default function FullArticle() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+      {article && (
+        <Helmet>
+          <title>{article.title} | BriefSnap</title>
+          <meta name="description" content={article.description || 'Read this article on BriefSnap'} />
+          
+          {/* OpenGraph meta tags */}
+          <meta property="og:title" content={article.title} />
+          <meta property="og:description" content={article.description || 'Read this article on BriefSnap'} />
+          <meta property="og:type" content="article" />
+          <meta property="og:url" content={window.location.href} />
+          
+          {/* Twitter Card meta tags */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={article.title} />
+          <meta name="twitter:description" content={article.description || 'Read this article on BriefSnap'} />
+        </Helmet>
+      )}
       <Header />
       <div className="py-8 px-4 flex-grow">
         <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">

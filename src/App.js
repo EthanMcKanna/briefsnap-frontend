@@ -10,26 +10,29 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BookmarkProvider } from './contexts/BookmarkContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BookmarkProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<BriefSnap />} />
-              <Route path="/article/:articleId" element={<FullArticle />} />
-              <Route path="/bookmarks" element={<BookmarksPage />} />
-              <Route path="/settings" element={<UserSettings />} />
-              <Route path="/articles" element={<ArticlesPage />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/terms-of-service" element={<TermsOfService />} />
-            </Routes>
-          </BrowserRouter>
-        </BookmarkProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BookmarkProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<BriefSnap />} />
+                <Route path="/article/:articleId" element={<FullArticle />} />
+                <Route path="/bookmarks" element={<BookmarksPage />} />
+                <Route path="/settings" element={<UserSettings />} />
+                <Route path="/articles" element={<ArticlesPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+              </Routes>
+            </BrowserRouter>
+          </BookmarkProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }
 
