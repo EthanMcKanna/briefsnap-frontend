@@ -9,6 +9,7 @@ import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkC
 import { Spinner } from './ui/Spinner'
 import { useAuth } from '../contexts/AuthContext'
 import { useBookmarks } from '../contexts/BookmarkContext'
+import Footer from './Footer';
 
 export default function FullArticle() {
   const { articleId } = useParams()
@@ -316,9 +317,9 @@ export default function FullArticle() {
   }, [article]);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <Header />
-      <div className="py-8 px-4">
+      <div className="py-8 px-4 flex-grow">
         <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
           <button
             onClick={() => navigate(-1)}
@@ -589,6 +590,7 @@ export default function FullArticle() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   )
 }

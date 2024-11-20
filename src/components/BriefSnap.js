@@ -10,6 +10,7 @@ import { collection, query, orderBy, limit, getDocs, where, Timestamp } from 'fi
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import { useBookmarks } from '../contexts/BookmarkContext';
+import Footer from './Footer';
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
@@ -75,9 +76,9 @@ export default function BriefSnap() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <Header />
-      <div className="flex flex-col items-center justify-center p-4">
+      <div className="flex flex-col items-center justify-center p-4 flex-grow">
         <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center space-x-2">
@@ -142,6 +143,7 @@ export default function BriefSnap() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }

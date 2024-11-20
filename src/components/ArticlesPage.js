@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore';
 import Header from './Header';
+import Footer from './Footer';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Spinner } from './ui/Spinner';
 import { useBookmarks } from '../contexts/BookmarkContext';
@@ -96,9 +97,9 @@ export default function ArticlesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <Header />
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-4 flex-grow">
         <Card className="dark:bg-gray-800/50 dark:border-gray-700">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center space-x-2">
@@ -158,6 +159,7 @@ export default function ArticlesPage() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }
