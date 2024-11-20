@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore';
@@ -13,15 +13,16 @@ export default function ArticlesPage() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const lastDocRef = useRef(null);
   const navigate = useNavigate();
   const { bookmarks, toggleBookmark } = useBookmarks();
   const ARTICLES_PER_PAGE = 10;
 
   const fetchArticles = useCallback(async (isInitial = false) => {
     try {
+      console.log('Fetching articles, isInitial:', isInitial);
       const articlesRef = collection(db, 'articles');
       let q;
 
@@ -31,30 +32,44 @@ export default function ArticlesPage() {
           orderBy('timestamp', 'desc'),
           limit(ARTICLES_PER_PAGE)
         );
+        lastDocRef.current = null;
       } else {
-        if (!lastDoc) return;
+        if (!lastDocRef.current) {
+          console.log('No last doc available');
+          setHasMore(false);
+          return;
+        }
         q = query(
           articlesRef,
           orderBy('timestamp', 'desc'),
-          startAfter(lastDoc),
+          startAfter(lastDocRef.current),
           limit(ARTICLES_PER_PAGE)
         );
       }
 
       const querySnapshot = await getDocs(q);
+      console.log('Fetched docs count:', querySnapshot.docs.length);
+      
+      if (querySnapshot.empty) {
+        setHasMore(false);
+        return;
+      }
+
       const articlesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-      setHasMore(querySnapshot.docs.length === ARTICLES_PER_PAGE);
-
+      lastDocRef.current = querySnapshot.docs[querySnapshot.docs.length - 1];
+      
       if (isInitial) {
         setArticles(articlesData);
       } else {
         setArticles(prev => [...prev, ...articlesData]);
       }
+      
+      setHasMore(querySnapshot.docs.length === ARTICLES_PER_PAGE);
+
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Failed to load content");
@@ -62,7 +77,7 @@ export default function ArticlesPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [lastDoc]); // Add lastDoc to dependencies
+  }, []); // Empty dependency array
 
   useEffect(() => {
     fetchArticles(true);
