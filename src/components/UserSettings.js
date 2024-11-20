@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Header from './Header';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/Card';
-import { Settings, Bell, Monitor } from 'lucide-react';
+import { Settings, Bell, Monitor, ChevronDown } from 'lucide-react';
 
 export default function UserSettings() {
   const { user, userPreferences, updatePreferences } = useAuth();
@@ -72,16 +72,19 @@ export default function UserSettings() {
                     Theme Preference
                   </label>
                 </div>
-                <select
-                  value={userPreferences.theme}
-                  onChange={(e) => handlePreferenceChange('theme', e.target.value)}
-                  disabled={isSaving}
-                  className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm"
-                >
-                  <option value="system">System</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={userPreferences.theme}
+                    onChange={(e) => handlePreferenceChange('theme', e.target.value)}
+                    disabled={isSaving}
+                    className="appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                </div>
               </div>
             </div>
           </CardContent>
