@@ -7,7 +7,7 @@ import Footer from './Footer';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Spinner } from './ui/Spinner';
 import { useBookmarks } from '../contexts/BookmarkContext';
-import { Bookmark, BookmarkCheck, Newspaper } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Newspaper, Search } from 'lucide-react';
 
 export default function ArticlesPage() {
   const [articles, setArticles] = useState([]);
@@ -18,7 +18,9 @@ export default function ArticlesPage() {
   const lastDocRef = useRef(null);
   const navigate = useNavigate();
   const { bookmarks, toggleBookmark } = useBookmarks();
-  const ARTICLES_PER_PAGE = 10;
+  const ARTICLES_PER_PAGE = 100;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredArticles, setFilteredArticles] = useState([]);
 
   const fetchArticles = useCallback(async (isInitial = false) => {
     try {
@@ -77,11 +79,19 @@ export default function ArticlesPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []); // Empty dependency array
+  }, []);
 
   useEffect(() => {
     fetchArticles(true);
   }, [fetchArticles]);
+
+  useEffect(() => {
+    const filtered = articles.filter(article => 
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredArticles(filtered);
+  }, [searchQuery, articles]);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
@@ -121,15 +131,25 @@ export default function ArticlesPage() {
               <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
               <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">All Stories</CardTitle>
             </div>
+            <div className="mt-4 relative">
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
           </CardHeader>
           <CardContent className="p-4">
             <div className="space-y-4">
-              {articles.map((article) => (
+              {filteredArticles.map((article) => (
                 <div 
                   key={article.id}
                   className="flex items-start justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                 >
-                  <div className="flex-1 cursor-pointer" onClick={() => navigate(`/article/${article.id}`)}>
+                  <div className="flex-1 cursor-pointer" onClick={() => navigate(`/article/${article.slug}`)}>
                     <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 hover:text-blue-600 dark:hover:text-blue-400">
                       {article.title}
                     </h3>
@@ -147,12 +167,12 @@ export default function ArticlesPage() {
                   </button>
                 </div>
               ))}
-              {articles.length === 0 && !loading && (
+              {filteredArticles.length === 0 && !loading && (
                 <div className="text-center p-8 text-gray-500 dark:text-gray-400">
-                  No articles available.
+                  {searchQuery ? 'No articles match your search.' : 'No articles available.'}
                 </div>
               )}
-              {hasMore && (
+              {!searchQuery && hasMore && (
                 <div className="flex justify-center pt-4">
                   <button
                     onClick={loadMore}

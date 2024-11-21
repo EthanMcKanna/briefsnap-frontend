@@ -21,7 +21,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<BriefSnap />} />
-                <Route path="/article/:articleId" element={<FullArticle />} />
+                <Route path="/article/:slug" element={<FullArticle />} />
                 <Route path="/bookmarks" element={<BookmarksPage />} />
                 <Route path="/settings" element={<UserSettings />} />
                 <Route path="/articles" element={<ArticlesPage />} />

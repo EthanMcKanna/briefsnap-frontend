@@ -13,7 +13,7 @@ import Footer from './Footer';
 import { Helmet } from 'react-helmet-async';
 
 export default function FullArticle() {
-  const { articleId } = useParams()
+  const { slug } = useParams() // Changed from articleId
   const navigate = useNavigate()
   const [article, setArticle] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -55,14 +55,14 @@ export default function FullArticle() {
   };
 
   const loadComments = useCallback(async () => {
-    if (!articleId) return;
+    if (!slug) return;
     setCommentsLoading(true);
     setCommentsError('');
     
     try {
       const q = query(
         collection(db, commentsCollection),
-        where('articleId', '==', articleId),
+        where('articleId', '==', slug),
         orderBy(sortBy === 'likes' ? 'likes' : 'timestamp', sortBy === 'likes' ? 'desc' : 'desc')
       );
       
@@ -95,18 +95,18 @@ export default function FullArticle() {
     } finally {
       setCommentsLoading(false);
     }
-  }, [articleId, user, sortBy]);
+  }, [slug, user, sortBy]);
 
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!articleId) return;
+      if (!slug) return;
       
       setLoading(true);
       setError('');
       
       try {
         const articlesRef = collection(db, 'articles');
-        const q = query(articlesRef, where('id', '==', articleId));
+        const q = query(articlesRef, where('slug', '==', slug));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
@@ -131,7 +131,7 @@ export default function FullArticle() {
     };
 
     fetchArticle();
-  }, [articleId]);
+  }, [slug]);
 
   useEffect(() => {
     if (showComments && !commentsLoaded) {
@@ -186,7 +186,7 @@ export default function FullArticle() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: newComment.trim(),
-          articleId,
+          articleId: slug,
           user: {
             uid: user.uid,
             displayName: user.displayName,

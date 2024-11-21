@@ -77,7 +77,7 @@ export default function BookmarksPage() {
                 >
                   <div className="flex-1">
                     <h3 
-                      onClick={() => navigate(`/article/${story.id}`)}
+                      onClick={() => navigate(`/article/${story.slug}`)}
                       className="font-medium text-gray-900 dark:text-gray-100 mb-2 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
                     >
                       {story.title}

@@ -71,8 +71,8 @@ export default function BriefSnap() {
     fetchSummaryAndArticles();
   }, []);
 
-  const handleReadMore = (articleId) => {
-    navigate(`/article/${articleId}`)
+  const handleReadMore = (slug) => { // Changed from articleId
+    navigate(`/article/${slug}`)
   }
 
   return (
@@ -114,7 +114,7 @@ export default function BriefSnap() {
                       >
                         <div className="flex justify-between items-start">
                           <div 
-                            onClick={() => handleReadMore(article.id)}
+                            onClick={() => handleReadMore(article.slug)}
                             className="flex-1 pointer-events-auto cursor-pointer"
                           >
                             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
