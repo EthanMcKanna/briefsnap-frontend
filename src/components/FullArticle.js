@@ -318,10 +318,7 @@ export default function FullArticle() {
   }, [article]);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col" 
-      onClick={(e) => e.stopPropagation()} 
-      onTouchEnd={(e) => e.stopPropagation()}
-    >
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       {article && (
         <Helmet>
           <title>{article.title} | BriefSnap</title>
@@ -340,10 +337,7 @@ export default function FullArticle() {
         </Helmet>
       )}
       <Header />
-      <div className="py-8 px-4 flex-grow relative z-0" 
-        onClick={(e) => e.stopPropagation()} 
-        onTouchEnd={(e) => e.stopPropagation()}
-      >
+      <div className="py-8 px-4 flex-grow">
         <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
           <button
             onClick={() => navigate(-1)}
@@ -375,10 +369,7 @@ export default function FullArticle() {
             </button>
           </div>
         </div>
-        <Card className="w-full max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700 relative z-10"
-          onClick={(e) => e.stopPropagation()} 
-          onTouchEnd={(e) => e.stopPropagation()}
-        >
+        <Card className="w-full max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             {loading ? (
               <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
@@ -482,7 +473,7 @@ export default function FullArticle() {
                     {showComments && (
                       <>
                         <div className="flex justify-between items-center mb-6">
-                          <div className="flex items-center space-x-4 relative z-20">
+                          <div className="flex items-center space-x-4">
                             <h2 className="text-xl font-semibold dark:text-gray-100">
                               Comments {comments.length > 0 && `(${comments.length})`}
                             </h2>
@@ -490,7 +481,7 @@ export default function FullArticle() {
                           </div>
                         </div>
                         
-                        <form onSubmit={addComment} className="mb-8 relative z-20">
+                        <form onSubmit={addComment} className="mb-8">
                           <div className="relative">
                             <textarea
                               value={newComment}
@@ -539,7 +530,7 @@ export default function FullArticle() {
                             <Spinner size="md" />
                           </div>
                         ) : (
-                          <div className="space-y-6 relative z-20">
+                          <div className="space-y-6">
                             {comments.length === 0 ? (
                               <div className="text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                                 <p className="text-gray-500 dark:text-gray-400">

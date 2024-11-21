@@ -112,7 +112,11 @@ export default function BriefSnap() {
                         <div className="flex justify-between items-start">
                           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
                           <button
-                            onClick={() => toggleBookmark(article)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggleBookmark(article);
+                            }}
                             className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                           >
                             {bookmarks.some(b => b.id === article.id) ? (
@@ -125,7 +129,11 @@ export default function BriefSnap() {
                         <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
                         <button 
                           className="text-blue-600 hover:underline mt-2 dark:text-blue-400"
-                          onClick={() => handleReadMore(article.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleReadMore(article.id);
+                          }}
                         >
                           Read More
                         </button>
