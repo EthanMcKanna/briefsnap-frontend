@@ -1,6 +1,7 @@
 // src/components/BriefSnap.js
 import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { Helmet } from 'react-helmet-async'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
 import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
@@ -77,6 +78,12 @@ export default function BriefSnap() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+      <Helmet>
+        <title>BriefSnap - Your Daily AI-Powered News Summary</title>
+        <meta name="description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
+        <meta property="og:title" content="BriefSnap - Your Daily AI-Powered News Summary" />
+        <meta property="og:description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
+      </Helmet>
       <Header />
       <div className="flex flex-col items-center justify-center p-4 flex-grow">
         <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800">
