@@ -318,7 +318,10 @@ export default function FullArticle() {
   }, [article]);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col isolate">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col" 
+      onClick={(e) => e.stopPropagation()} 
+      onTouchEnd={(e) => e.stopPropagation()}
+    >
       {article && (
         <Helmet>
           <title>{article.title} | BriefSnap</title>
@@ -337,8 +340,11 @@ export default function FullArticle() {
         </Helmet>
       )}
       <Header />
-      <div className="py-8 px-4 flex-grow relative z-0 pointer-events-none">
-        <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center pointer-events-auto">
+      <div className="py-8 px-4 flex-grow relative z-0" 
+        onClick={(e) => e.stopPropagation()} 
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+        <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
@@ -369,7 +375,10 @@ export default function FullArticle() {
             </button>
           </div>
         </div>
-        <Card className="w-full max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700 relative z-10 pointer-events-auto">
+        <Card className="w-full max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700 relative z-10"
+          onClick={(e) => e.stopPropagation()} 
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
           <CardHeader>
             {loading ? (
               <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
