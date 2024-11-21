@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, limit, startAfter, where } from 'firebase/firestore';
 import Header from './Header';
 import Footer from './Footer';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Spinner } from './ui/Spinner';
 import { useBookmarks } from '../contexts/BookmarkContext';
-import { Bookmark, BookmarkCheck, Newspaper, Search } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Newspaper, Search, ChevronDown } from 'lucide-react';
 
 export default function ArticlesPage() {
   const [articles, setArticles] = useState([]);
@@ -21,17 +21,41 @@ export default function ArticlesPage() {
   const ARTICLES_PER_PAGE = 100;
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredArticles, setFilteredArticles] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState('ALL');
+  const [topicMenuOpen, setTopicMenuOpen] = useState(false);
+  const topicMenuRef = useRef(null);
+
+  const TOPICS = [
+    { value: 'ALL', label: 'All Topics' },
+    { value: 'TOP_NEWS', label: 'Top News' },
+    { value: 'WORLD', label: 'World' },
+    { value: 'NATION', label: 'Nation' },
+    { value: 'BUSINESS', label: 'Business' },
+    { value: 'TECHNOLOGY', label: 'Technology' },
+    { value: 'ENTERTAINMENT', label: 'Entertainment' },
+    { value: 'SPORTS', label: 'Sports' },
+    { value: 'SCIENCE', label: 'Science' },
+    { value: 'HEALTH', label: 'Health' },
+  ];
 
   const fetchArticles = useCallback(async (isInitial = false) => {
     try {
       console.log('Fetching articles, isInitial:', isInitial);
       const articlesRef = collection(db, 'articles');
-      let q;
+      let baseQuery = [];
 
+      // Only add topic filter if not showing all
+      if (selectedTopic !== 'ALL') {
+        baseQuery.push(where('topic', '==', selectedTopic));
+      }
+
+      baseQuery.push(orderBy('timestamp', 'desc'));
+
+      let q;
       if (isInitial) {
         q = query(
           articlesRef,
-          orderBy('timestamp', 'desc'),
+          ...baseQuery,
           limit(ARTICLES_PER_PAGE)
         );
         lastDocRef.current = null;
@@ -43,7 +67,7 @@ export default function ArticlesPage() {
         }
         q = query(
           articlesRef,
-          orderBy('timestamp', 'desc'),
+          ...baseQuery,
           startAfter(lastDocRef.current),
           limit(ARTICLES_PER_PAGE)
         );
@@ -79,7 +103,7 @@ export default function ArticlesPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [selectedTopic]);
 
   useEffect(() => {
     fetchArticles(true);
@@ -93,11 +117,71 @@ export default function ArticlesPage() {
     setFilteredArticles(filtered);
   }, [searchQuery, articles]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (topicMenuRef.current && !topicMenuRef.current.contains(event.target)) {
+        setTopicMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Reset and refetch when topic changes
+  useEffect(() => {
+    setArticles([]);
+    setHasMore(true);
+    lastDocRef.current = null;
+    fetchArticles(true);
+  }, [selectedTopic, fetchArticles]);
+
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     await fetchArticles(false);
   };
+
+  const TopicMenu = () => (
+    <div ref={topicMenuRef} className="relative">
+      <button
+        onClick={() => setTopicMenuOpen(!topicMenuOpen)}
+        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 
+          border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 
+          transition-colors duration-200"
+      >
+        <span className="text-gray-700 dark:text-gray-300">
+          {TOPICS.find(t => t.value === selectedTopic)?.label}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-500 transform transition-transform duration-200
+          ${topicMenuOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {topicMenuOpen && (
+        <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 
+          ring-1 ring-black ring-opacity-5 z-50">
+          <div className="py-1" role="menu">
+            {TOPICS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  setSelectedTopic(value);
+                  setTopicMenuOpen(false);
+                }}
+                className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200
+                  ${selectedTopic === value
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -131,15 +215,18 @@ export default function ArticlesPage() {
               <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
               <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">All Stories</CardTitle>
             </div>
-            <div className="mt-4 relative">
-              <input
-                type="text"
-                placeholder="Search articles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="mt-4 flex flex-col sm:flex-row gap-4">
+              <TopicMenu />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-4">

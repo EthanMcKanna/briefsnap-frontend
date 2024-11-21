@@ -48,7 +48,12 @@ export default function BriefSnap() {
         // Fetch summary if not cached
         if (!cachedSummary) {
           const summariesRef = collection(db, 'news_summaries');
-          const summaryQuery = query(summariesRef, orderBy('timestamp', 'desc'), limit(1));
+          const summaryQuery = query(
+            summariesRef, 
+            where('topic', '==', 'TOP_NEWS'),
+            orderBy('timestamp', 'desc'), 
+            limit(1)
+          );
           const summarySnapshot = await getDocs(summaryQuery);
 
           if (!summarySnapshot.empty) {
@@ -69,6 +74,7 @@ export default function BriefSnap() {
           const articlesRef = collection(db, 'articles');
           const articlesQuery = query(
             articlesRef,
+            where('topic', '==', 'TOP_NEWS'),
             where('timestamp', '>=', Timestamp.fromDate(today)),
             orderBy('timestamp', 'desc')
           );
