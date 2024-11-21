@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import { useBookmarks } from '../contexts/BookmarkContext';
 import Footer from './Footer';
+import { useCache } from '../contexts/CacheContext';
 
 export default function BriefSnap() {
   const [summary, setSummary] = useState('')
@@ -20,6 +21,7 @@ export default function BriefSnap() {
   const [articles, setArticles] = useState([])
   const { bookmarks, toggleBookmark } = useBookmarks();
   const navigate = useNavigate()
+  const { getCachedArticles, cacheArticles, getCachedSummary, cacheSummary } = useCache();
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -32,35 +34,56 @@ export default function BriefSnap() {
     const fetchSummaryAndArticles = async () => {
       setLoading(true);
       try {
-        // Fetch summary
-        const summariesRef = collection(db, 'news_summaries');
-        const summaryQuery = query(summariesRef, orderBy('timestamp', 'desc'), limit(1));
-        const summarySnapshot = await getDocs(summaryQuery);
+        // Check cache first
+        const cachedSummary = getCachedSummary();
+        const cachedArticles = getCachedArticles('today');
 
-        if (!summarySnapshot.empty) {
-          const doc = summarySnapshot.docs[0];
-          const data = doc.data();
-          setSummary(data.summary || '');
+        if (cachedSummary && cachedArticles) {
+          setSummary(cachedSummary);
+          setArticles(cachedArticles);
+          setLoading(false);
+          return;
         }
 
-        // Fetch articles
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const articlesRef = collection(db, 'articles');
-        const articlesQuery = query(
-          articlesRef,
-          where('timestamp', '>=', Timestamp.fromDate(today)),
-          orderBy('timestamp', 'desc')
-        );
-        
-        const articlesSnapshot = await getDocs(articlesQuery);
-        const articlesData = articlesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        setArticles(articlesData);
+        // Fetch summary if not cached
+        if (!cachedSummary) {
+          const summariesRef = collection(db, 'news_summaries');
+          const summaryQuery = query(summariesRef, orderBy('timestamp', 'desc'), limit(1));
+          const summarySnapshot = await getDocs(summaryQuery);
+
+          if (!summarySnapshot.empty) {
+            const doc = summarySnapshot.docs[0];
+            const data = doc.data();
+            setSummary(data.summary || '');
+            cacheSummary(data.summary || '');
+          }
+        } else {
+          setSummary(cachedSummary);
+        }
+
+        // Fetch articles if not cached
+        if (!cachedArticles) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const articlesRef = collection(db, 'articles');
+          const articlesQuery = query(
+            articlesRef,
+            where('timestamp', '>=', Timestamp.fromDate(today)),
+            orderBy('timestamp', 'desc')
+          );
+          
+          const articlesSnapshot = await getDocs(articlesQuery);
+          const articlesData = articlesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          setArticles(articlesData);
+          cacheArticles(articlesData, 'today');
+        } else {
+          setArticles(cachedArticles);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load content");
@@ -70,7 +93,7 @@ export default function BriefSnap() {
     };
 
     fetchSummaryAndArticles();
-  }, []);
+  }, [getCachedSummary, cacheSummary, getCachedArticles, cacheArticles]);
 
   const handleReadMore = (slug) => { // Changed from articleId
     navigate(`/article/${slug}`)

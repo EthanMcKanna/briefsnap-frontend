@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBookmarks } from '../contexts/BookmarkContext'
 import Footer from './Footer';
 import { Helmet } from 'react-helmet-async';
+import { useCache } from '../contexts/CacheContext';
 
 export default function FullArticle() {
   const { slug } = useParams() // Changed from articleId
@@ -34,6 +35,7 @@ export default function FullArticle() {
   const [likingComments, setLikingComments] = useState({});
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const sortMenuRef = useRef(null);
+  const { getCachedComments, cacheComments, getCachedArticle, cacheArticle } = useCache();
 
 
   const processCitations = (text, citations) => {
@@ -60,6 +62,14 @@ export default function FullArticle() {
     setCommentsError('');
     
     try {
+      // Check cache first
+      const cachedComments = getCachedComments(slug);
+      if (cachedComments) {
+        setComments(cachedComments);
+        setCommentsLoading(false);
+        return;
+      }
+
       const q = query(
         collection(db, commentsCollection),
         where('articleId', '==', slug),
@@ -81,6 +91,7 @@ export default function FullArticle() {
       });
       
       setComments(formattedComments);
+      cacheComments(slug, formattedComments);
 
       if (user) {
         const likes = {};
@@ -95,7 +106,7 @@ export default function FullArticle() {
     } finally {
       setCommentsLoading(false);
     }
-  }, [slug, user, sortBy]);
+  }, [slug, user, sortBy, getCachedComments, cacheComments]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -105,16 +116,27 @@ export default function FullArticle() {
       setError('');
       
       try {
+        // Check cache first
+        const cachedArticle = getCachedArticle(slug);
+        if (cachedArticle) {
+          setArticle(cachedArticle);
+          if (cachedArticle.full_article) {
+            setReadingTime(calculateReadingTime(cachedArticle.full_article));
+          }
+          setLoading(false);
+          return;
+        }
+
         const articlesRef = collection(db, 'articles');
         const q = query(articlesRef, where('slug', '==', slug));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
           const articleDoc = querySnapshot.docs[0];
-          const articleData = articleDoc.data();
-          setArticle({ ...articleData, docId: articleDoc.id });
+          const articleData = { ...articleDoc.data(), docId: articleDoc.id };
+          setArticle(articleData);
+          cacheArticle(slug, articleData);
           
-          // Calculate reading time when article is loaded
           if (articleData.full_article) {
             const time = calculateReadingTime(articleData.full_article);
             setReadingTime(time);
@@ -131,7 +153,7 @@ export default function FullArticle() {
     };
 
     fetchArticle();
-  }, [slug]);
+  }, [slug, getCachedArticle, cacheArticle]);
 
   useEffect(() => {
     if (showComments && !commentsLoaded) {
