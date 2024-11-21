@@ -108,16 +108,24 @@ export default function BriefSnap() {
                   <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Today's Stories:</h3>
                   <div className="space-y-4">
                     {articles.map((article) => (
-                      <div key={article.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+                      <div 
+                        key={article.id} 
+                        className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700 pointer-events-none"
+                      >
                         <div className="flex justify-between items-start">
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
+                          <div 
+                            onClick={() => handleReadMore(article.id)}
+                            className="flex-1 pointer-events-auto cursor-pointer"
+                          >
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
+                            <span className="text-blue-600 hover:underline mt-2 inline-block dark:text-blue-400">
+                              Read More
+                            </span>
+                          </div>
                           <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleBookmark(article);
-                            }}
-                            className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                            onClick={() => toggleBookmark(article)}
+                            className="ml-4 pointer-events-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                           >
                             {bookmarks.some(b => b.id === article.id) ? (
                               <BookmarkCheck className="h-5 w-5" />
@@ -126,17 +134,6 @@ export default function BriefSnap() {
                             )}
                           </button>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
-                        <button 
-                          className="text-blue-600 hover:underline mt-2 dark:text-blue-400"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleReadMore(article.id);
-                          }}
-                        >
-                          Read More
-                        </button>
                       </div>
                     ))}
                     {articles.length === 0 && (
