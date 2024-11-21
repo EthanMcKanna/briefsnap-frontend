@@ -119,7 +119,7 @@ export default function BriefSnap() {
                           >
                             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
                             <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
-                            <span className="text-blue-600 hover:underline mt-2 inline-block dark:text-blue-400">
+                            <span className="text-blue-600 dark:text-blue-400 mt-2 inline-block">
                               Read More
                             </span>
                           </div>
