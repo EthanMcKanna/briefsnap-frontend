@@ -9,6 +9,39 @@ import { Spinner } from './ui/Spinner';
 import { useBookmarks } from '../contexts/BookmarkContext';
 import { Bookmark, BookmarkCheck, Newspaper, Search, ChevronDown } from 'lucide-react';
 
+const TOPICS = [
+  { value: 'ALL', label: 'All Topics' },
+  { value: 'TOP_NEWS', label: 'Top News' },
+  { value: 'BUSINESS', label: 'Business' },
+  { value: 'TECHNOLOGY', label: 'Technology' },
+  { value: 'SPORTS', label: 'Sports' },
+  // { value: 'WORLD', label: 'World' },
+  // { value: 'NATION', label: 'Nation' },
+  // { value: 'ENTERTAINMENT', label: 'Entertainment' },
+  // { value: 'SCIENCE', label: 'Science' },
+  // { value: 'HEALTH', label: 'Health' },
+];
+
+const TopicMenu = ({ selectedTopic, onTopicChange }) => (
+  <div className="relative">
+    <select
+      value={selectedTopic}
+      onChange={(e) => {
+        console.log('Topic changed to:', e.target.value);
+        onTopicChange(e.target.value);
+      }}
+      className="appearance-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 w-[200px] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      {TOPICS.map(({ value, label }) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
+    </select>
+    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+  </div>
+);
+
 export default function ArticlesPage() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,40 +55,24 @@ export default function ArticlesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredArticles, setFilteredArticles] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('ALL');
-  const [topicMenuOpen, setTopicMenuOpen] = useState(false);
-  const topicMenuRef = useRef(null);
-
-  const TOPICS = [
-    { value: 'ALL', label: 'All Topics' },
-    { value: 'TOP_NEWS', label: 'Top News' },
-    { value: 'WORLD', label: 'World' },
-    { value: 'NATION', label: 'Nation' },
-    { value: 'BUSINESS', label: 'Business' },
-    { value: 'TECHNOLOGY', label: 'Technology' },
-    { value: 'ENTERTAINMENT', label: 'Entertainment' },
-    { value: 'SPORTS', label: 'Sports' },
-    { value: 'SCIENCE', label: 'Science' },
-    { value: 'HEALTH', label: 'Health' },
-  ];
 
   const fetchArticles = useCallback(async (isInitial = false) => {
     try {
-      console.log('Fetching articles, isInitial:', isInitial);
+      console.log('Fetching articles, isInitial:', isInitial, 'topic:', selectedTopic);
       const articlesRef = collection(db, 'articles');
-      let baseQuery = [];
-
-      // Only add topic filter if not showing all
+      
+      let queryConstraints = [orderBy('timestamp', 'desc')];
+      
       if (selectedTopic !== 'ALL') {
-        baseQuery.push(where('topic', '==', selectedTopic));
+        queryConstraints.unshift(where('topic', '==', selectedTopic));
+        console.log('Adding topic filter for:', selectedTopic);
       }
-
-      baseQuery.push(orderBy('timestamp', 'desc'));
 
       let q;
       if (isInitial) {
         q = query(
           articlesRef,
-          ...baseQuery,
+          ...queryConstraints,
           limit(ARTICLES_PER_PAGE)
         );
         lastDocRef.current = null;
@@ -67,14 +84,14 @@ export default function ArticlesPage() {
         }
         q = query(
           articlesRef,
-          ...baseQuery,
+          ...queryConstraints,
           startAfter(lastDocRef.current),
           limit(ARTICLES_PER_PAGE)
         );
       }
 
       const querySnapshot = await getDocs(q);
-      console.log('Fetched docs count:', querySnapshot.docs.length);
+      console.log('Fetched docs count:', querySnapshot.docs.length, 'for topic:', selectedTopic);
       
       if (querySnapshot.empty) {
         setHasMore(false);
@@ -118,18 +135,6 @@ export default function ArticlesPage() {
   }, [searchQuery, articles]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (topicMenuRef.current && !topicMenuRef.current.contains(event.target)) {
-        setTopicMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Reset and refetch when topic changes
-  useEffect(() => {
     setArticles([]);
     setHasMore(true);
     lastDocRef.current = null;
@@ -142,46 +147,14 @@ export default function ArticlesPage() {
     await fetchArticles(false);
   };
 
-  const TopicMenu = () => (
-    <div ref={topicMenuRef} className="relative">
-      <button
-        onClick={() => setTopicMenuOpen(!topicMenuOpen)}
-        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 
-          border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 
-          transition-colors duration-200"
-      >
-        <span className="text-gray-700 dark:text-gray-300">
-          {TOPICS.find(t => t.value === selectedTopic)?.label}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-gray-500 transform transition-transform duration-200
-          ${topicMenuOpen ? 'rotate-180' : ''}`} />
-      </button>
-      
-      {topicMenuOpen && (
-        <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 
-          ring-1 ring-black ring-opacity-5 z-50">
-          <div className="py-1" role="menu">
-            {TOPICS.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => {
-                  setSelectedTopic(value);
-                  setTopicMenuOpen(false);
-                }}
-                className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200
-                  ${selectedTopic === value
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const handleTopicChange = (newTopic) => {
+    console.log('Handling topic change:', newTopic);
+    setSelectedTopic(newTopic);
+    setFilteredArticles([]); 
+    setArticles([]);
+    setHasMore(true);
+    lastDocRef.current = null;
+  };
 
   if (loading) {
     return (
@@ -216,7 +189,10 @@ export default function ArticlesPage() {
               <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">All Stories</CardTitle>
             </div>
             <div className="mt-4 flex flex-col sm:flex-row gap-4">
-              <TopicMenu />
+              <TopicMenu 
+                selectedTopic={selectedTopic} 
+                onTopicChange={handleTopicChange}
+              />
               <div className="relative flex-1">
                 <input
                   type="text"
