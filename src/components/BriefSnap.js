@@ -80,10 +80,31 @@ export default function BriefSnap() {
           );
           
           const articlesSnapshot = await getDocs(articlesQuery);
-          const articlesData = articlesSnapshot.docs.map(doc => ({
+          let articlesData = articlesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
+
+          if (articlesData.length < 3) {
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const yesterdayQuery = query(
+              articlesRef,
+              where('topic', '==', 'TOP_NEWS'),
+              where('timestamp', '>=', Timestamp.fromDate(yesterday)),
+              where('timestamp', '<', Timestamp.fromDate(today)),
+              orderBy('timestamp', 'desc')
+            );
+            
+            const yesterdaySnapshot = await getDocs(yesterdayQuery);
+            const yesterdayArticles = yesterdaySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            
+            articlesData = [...articlesData, ...yesterdayArticles];
+          }
           
           setArticles(articlesData);
           cacheArticles(articlesData, 'today');
@@ -101,7 +122,7 @@ export default function BriefSnap() {
     fetchSummaryAndArticles();
   }, [getCachedSummary, cacheSummary, getCachedArticles, cacheArticles]);
 
-  const handleReadMore = (slug) => { // Changed from articleId
+  const handleReadMore = (slug) => {
     navigate(`/article/${slug}`)
   }
 
