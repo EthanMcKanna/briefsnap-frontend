@@ -1,9 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 export default function SitemapXML() {
+  const [xmlContent, setXmlContent] = useState('');
+
   useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.httpEquiv = "Content-Type";
+    meta.content = "application/xml";
+    document.getElementsByTagName('head')[0].appendChild(meta);
+
     const generateSitemap = async () => {
       try {
         const articlesRef = collection(db, 'articles');
@@ -35,22 +42,20 @@ export default function SitemapXML() {
   `).join('')}
 </urlset>`;
 
-        const blob = new Blob([xml], { type: 'text/xml' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
+        setXmlContent(xml);
       } catch (error) {
         console.error('Error generating sitemap:', error);
       }
     };
 
     generateSitemap();
+
+    return () => {
+      document.getElementsByTagName('head')[0].removeChild(meta);
+    };
   }, []);
 
-  return null;
+  return (
+    <div dangerouslySetInnerHTML={{ __html: xmlContent }} />
+  );
 }

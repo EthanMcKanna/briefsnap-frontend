@@ -15,12 +15,54 @@ const TOPICS = [
   { value: 'BUSINESS', label: 'Business' },
   { value: 'TECHNOLOGY', label: 'Technology' },
   { value: 'SPORTS', label: 'Sports' },
-  // { value: 'WORLD', label: 'World' },
-  // { value: 'NATION', label: 'Nation' },
-  // { value: 'ENTERTAINMENT', label: 'Entertainment' },
-  // { value: 'SCIENCE', label: 'Science' },
-  // { value: 'HEALTH', label: 'Health' },
+  { value: 'WORLD', label: 'World' },
+  { value: 'NATION', label: 'Nation' },
+  { value: 'ENTERTAINMENT', label: 'Entertainment' },
+  { value: 'SCIENCE', label: 'Science' },
+  { value: 'HEALTH', label: 'Health' },
 ];
+
+const TOPIC_COLORS = {
+  TOP_NEWS: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  BUSINESS: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  TECHNOLOGY: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  SPORTS: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  WORLD: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+  NATION: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  ENTERTAINMENT: 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+  SCIENCE: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+  HEALTH: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+};
+
+const TopicTag = ({ topic }) => {
+  if (!topic || topic === 'ALL') return null;
+  const colorClasses = TOPIC_COLORS[topic] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  const label = TOPICS.find(t => t.value === topic)?.label || topic;
+  
+  return (
+    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${colorClasses}`}>
+      {label}
+    </span>
+  );
+};
+
+const formatRelativeDate = (timestamp) => {
+  if (!timestamp) return '';
+  const date = timestamp.toDate();
+  const now = new Date();
+  const diffTime = now - date;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  } else if (diffDays === 1) {
+    return `Yesterday at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  } else if (diffDays < 7) {
+    return `${diffDays} days ago`;
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+};
 
 const TopicMenu = ({ selectedTopic, onTopicChange }) => (
   <div className="relative">
@@ -217,6 +259,12 @@ export default function ArticlesPage() {
                       {article.title}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatRelativeDate(article.timestamp)}
+                      </span>
+                      <TopicTag topic={article.topic} />
+                    </div>
                   </div>
                   <button
                     onClick={() => toggleBookmark(article)}

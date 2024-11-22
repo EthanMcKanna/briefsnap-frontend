@@ -14,7 +14,7 @@ import { Helmet } from 'react-helmet-async';
 import { useCache } from '../contexts/CacheContext';
 
 export default function FullArticle() {
-  const { slug } = useParams() // Changed from articleId
+  const { slug } = useParams()
   const navigate = useNavigate()
   const [article, setArticle] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -398,14 +398,25 @@ export default function FullArticle() {
             ) : error ? (
               <div className="text-center text-red-500 dark:text-red-400">{error}</div>
             ) : (
-              <CardTitle className="text-3xl font-bold dark:text-white">
-                {article.title}
-              </CardTitle>
-            )}
-            {!loading && !error && (
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                {readingTime} min read
-              </div>
+              <>
+                <CardTitle className="text-3xl font-bold dark:text-white">
+                  {article.title}
+                </CardTitle>
+                <div className="flex items-center space-x-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
+                  <time dateTime={article.timestamp?.toDate().toISOString()}>
+                    {article.timestamp?.toDate().toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}
+                  </time>
+                  <span>•</span>
+                  <span>{readingTime} min read</span>
+                </div>
+              </>
             )}
           </CardHeader>
           <CardContent>
