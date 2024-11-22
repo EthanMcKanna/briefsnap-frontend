@@ -6,6 +6,8 @@ import UserSettings from './components/UserSettings';
 import ArticlesPage from './components/ArticlesPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import Sitemap from './components/Sitemap';
+import SitemapXML from './components/SitemapXML';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BookmarkProvider } from './contexts/BookmarkContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -29,6 +31,8 @@ function App() {
                   <Route path="/articles" element={<ArticlesPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/terms-of-service" element={<TermsOfService />} />
+                  <Route path="/sitemap" element={<Sitemap />} />
+                  <Route path="/sitemap.xml" element={<SitemapXML />} />
                 </Routes>
               </BrowserRouter>
             </BookmarkProvider>

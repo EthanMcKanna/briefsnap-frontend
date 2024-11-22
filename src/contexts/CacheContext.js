@@ -111,6 +111,27 @@ export function CacheProvider({ children }) {
     return cached.data;
   }, [commentsCache, CACHE_EXPIRY]);
 
+  const cacheSitemapArticles = (articles) => {
+    localStorage.setItem('sitemap_articles', JSON.stringify({
+      data: articles,
+      timestamp: Date.now()
+    }));
+  };
+
+  const getCachedSitemapArticles = () => {
+    const cached = localStorage.getItem('sitemap_articles');
+    if (!cached) return null;
+
+    const { data, timestamp } = JSON.parse(cached);
+    // Cache expires after 1 hour
+    if (Date.now() - timestamp > 3600000) {
+      localStorage.removeItem('sitemap_articles');
+      return null;
+    }
+
+    return data;
+  };
+
   const clearCache = useCallback(() => {
     console.log('🧹 Clearing all caches');
     setArticlesCache(new Map());
@@ -128,6 +149,8 @@ export function CacheProvider({ children }) {
       getCachedSummary,
       cacheComments,
       getCachedComments,
+      cacheSitemapArticles,
+      getCachedSitemapArticles,
       clearCache
     }}>
       {children}
