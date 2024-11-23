@@ -337,7 +337,7 @@ export default function BriefSnap() {
               </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Here's your personalized news briefing for today
+              Here's your personalized briefing for today
             </p>
             {userPreferences?.location && (
               <div className="mt-4">

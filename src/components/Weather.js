@@ -4,22 +4,23 @@ import { Card, CardContent } from './ui/Card';
 import { useCache } from '../contexts/CacheContext';
 
 const WeatherIcon = ({ code }) => {
-  // Tomorrow.io weather codes mapping
+  const iconClasses = "w-6 h-6 text-gray-700 dark:text-gray-300";
+  
   switch (code) {
     case 1000: // Clear, Sunny
-      return <Sun className="w-6 h-6" />;
+      return <Sun className={iconClasses} />;
     case 1100: case 1101: case 1102: // Mostly Clear, Partly Cloudy
-      return <Cloudy className="w-6 h-6" />;
+      return <Cloudy className={iconClasses} />;
     case 1001: // Cloudy
-      return <Cloud className="w-6 h-6" />;
+      return <Cloud className={iconClasses} />;
     case 4000: case 4001: case 4200: case 4201: // Rain
-      return <CloudRain className="w-6 h-6" />;
+      return <CloudRain className={iconClasses} />;
     case 5000: case 5001: case 5100: case 5101: // Snow
-      return <CloudSnow className="w-6 h-6" />;
+      return <CloudSnow className={iconClasses} />;
     case 8000: // Thunderstorm
-      return <CloudLightning className="w-6 h-6" />;
+      return <CloudLightning className={iconClasses} />;
     default:
-      return <Wind className="w-6 h-6" />;
+      return <Wind className={iconClasses} />;
   }
 };
 
@@ -150,7 +151,7 @@ export default function Weather({ location }) {
         {activeTab === 'current' && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <Thermometer className="w-5 h-5 text-blue-500" />
+              <Thermometer className="w-5 h-5 text-blue-500 dark:text-blue-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">High/Low</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -160,7 +161,7 @@ export default function Weather({ location }) {
               </div>
             </div>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <Droplets className="w-5 h-5 text-blue-500" />
+              <Droplets className="w-5 h-5 text-blue-500 dark:text-blue-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Humidity</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -169,7 +170,7 @@ export default function Weather({ location }) {
               </div>
             </div>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <Wind className="w-5 h-5 text-blue-500" />
+              <Wind className="w-5 h-5 text-blue-500 dark:text-blue-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Wind</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -178,7 +179,7 @@ export default function Weather({ location }) {
               </div>
             </div>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <Umbrella className="w-5 h-5 text-blue-500" />
+              <Umbrella className="w-5 h-5 text-blue-500 dark:text-blue-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Precipitation</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
