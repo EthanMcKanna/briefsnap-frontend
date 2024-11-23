@@ -63,10 +63,10 @@ export function CacheProvider({ children }) {
     return cached.data;
   }, [articlesCache, CACHE_EXPIRY]);
 
-  const cacheSummary = useCallback((summary) => {
+  const cacheSummary = useCallback((summary, timestamp) => {
     console.log('💾 Caching summary');
     setSummaryCache({
-      data: summary,
+      data: { summary, timestamp },
       timestamp: Date.now()
     });
   }, []);

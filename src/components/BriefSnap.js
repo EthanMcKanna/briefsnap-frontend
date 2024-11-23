@@ -103,6 +103,7 @@ export default function BriefSnap() {
   const { bookmarks, toggleBookmark } = useBookmarks();
   const navigate = useNavigate()
   const { getCachedArticles, cacheArticles, getCachedSummary, cacheSummary } = useCache();
+  const [summaryTimestamp, setSummaryTimestamp] = useState(null);
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -116,18 +117,19 @@ export default function BriefSnap() {
       setLoading(true);
       try {
         // Check cache first
-        const cachedSummary = getCachedSummary();
+        const cachedSummaryData = getCachedSummary();
         const cachedArticles = getCachedArticles('today');
 
-        if (cachedSummary && cachedArticles) {
-          setSummary(cachedSummary);
+        if (cachedSummaryData && cachedArticles) {
+          setSummary(cachedSummaryData.summary);
+          setSummaryTimestamp(cachedSummaryData.timestamp);
           setArticles(cachedArticles);
           setLoading(false);
           return;
         }
 
         // Fetch summary if not cached
-        if (!cachedSummary) {
+        if (!cachedSummaryData) {
           const summariesRef = collection(db, 'news_summaries');
           const summaryQuery = query(
             summariesRef, 
@@ -141,10 +143,12 @@ export default function BriefSnap() {
             const doc = summarySnapshot.docs[0];
             const data = doc.data();
             setSummary(data.summary || '');
-            cacheSummary(data.summary || '');
+            setSummaryTimestamp(data.timestamp);
+            cacheSummary(data.summary || '', data.timestamp);
           }
         } else {
-          setSummary(cachedSummary);
+          setSummary(cachedSummaryData.summary);
+          setSummaryTimestamp(cachedSummaryData.timestamp);
         }
 
         // Fetch articles if not cached
@@ -312,9 +316,9 @@ export default function BriefSnap() {
                   <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown>{summary}</ReactMarkdown>
                   </div>
-                  {!loading && !error && (
+                  {!loading && !error && summaryTimestamp && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                      Last updated: {formatRelativeTime(articles[0]?.timestamp)}
+                      Last updated: {formatRelativeTime(summaryTimestamp)}
                     </p>
                   )}
                 </ScrollArea>
