@@ -92,7 +92,7 @@ export function CacheProvider({ children }) {
     }));
   }, []);
 
-  const getCachedComments = useCallback((articleId) => {
+  const getCachedComments = useCallback((articleId, sortBy = 'likes') => {
     const cached = commentsCache.get(articleId);
     if (!cached) {
       console.log(`🔍 Cache miss: comments (${articleId})`);
@@ -108,7 +108,16 @@ export function CacheProvider({ children }) {
       return null;
     }
     console.log(`✅ Cache hit: comments (${articleId})`);
-    return cached.data;
+    
+    const sortedComments = [...cached.data].sort((a, b) => {
+      if (sortBy === 'likes') {
+        return b.likes - a.likes;
+      } else {
+        return b.timestamp - a.timestamp;
+      }
+    });
+    
+    return sortedComments;
   }, [commentsCache, CACHE_EXPIRY]);
 
   const cacheSitemapArticles = (articles) => {

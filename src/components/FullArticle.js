@@ -33,8 +33,6 @@ export default function FullArticle() {
   const [sortBy, setSortBy] = useState('likes');
   const [readingTime, setReadingTime] = useState(0);
   const [likingComments, setLikingComments] = useState({});
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const sortMenuRef = useRef(null);
   const { getCachedComments, cacheComments, getCachedArticle, cacheArticle } = useCache();
 
 
@@ -62,8 +60,7 @@ export default function FullArticle() {
     setCommentsError('');
     
     try {
-      // Check cache first
-      const cachedComments = getCachedComments(slug);
+      const cachedComments = getCachedComments(slug, sortBy);
       if (cachedComments) {
         setComments(cachedComments);
         setCommentsLoading(false);
@@ -168,17 +165,6 @@ export default function FullArticle() {
     }
   }, [sortBy, loadComments, commentsLoaded]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target)) {
-        setSortMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -224,8 +210,20 @@ export default function FullArticle() {
         return;
       }
 
+      const newCommentObj = {
+        id: result.commentId,
+        content: newComment.trim(),
+        userId: user.uid,
+        userName: user.displayName,
+        userPhoto: user.photoURL,
+        articleId: slug,
+        timestamp: new Date(),
+        likes: 0,
+        likedBy: []
+      };
+
+      setComments(prev => [newCommentObj, ...prev]);
       setNewComment('');
-      await loadComments();
     } catch (error) {
       console.error('Error adding comment:', error);
       setModerationError('Unable to post comment. Please try again later.');
@@ -242,10 +240,16 @@ export default function FullArticle() {
     }
 
     try {
+      setComments(prev => prev.filter(comment => comment.id !== commentId));
+      
       await deleteDoc(doc(db, commentsCollection, commentId));
-      await loadComments();
+      
+      const updatedComments = comments.filter(comment => comment.id !== commentId);
+      cacheComments(slug, updatedComments);
     } catch (error) {
       console.error('Error deleting comment:', error);
+
+      await loadComments();
       alert('Failed to delete comment. Please try again.');
     }
   };
@@ -286,53 +290,6 @@ export default function FullArticle() {
       setLikingComments(prev => ({ ...prev, [commentId]: false }));
     }
   };
-
-  const SortMenu = () => (
-    <div ref={sortMenuRef} className="relative">
-      <button
-        onClick={() => setSortMenuOpen(!sortMenuOpen)}
-        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 
-          border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 
-          transition-colors duration-200"
-      >
-        <span className="text-gray-700 dark:text-gray-300">
-          Sort by: {sortBy === 'likes' ? 'Most Liked' : 'Newest'}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-gray-500 transform transition-transform duration-200
-          ${sortMenuOpen ? 'rotate-180' : ''}`} />
-      </button>
-      
-      {sortMenuOpen && (
-        <div 
-          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 
-            ring-1 ring-black ring-opacity-5 z-50"
-        >
-          <div className="py-1" role="menu">
-            {[
-              { value: 'likes', label: 'Most Liked' },
-              { value: 'newest', label: 'Newest' }
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSortBy(value);
-                  setSortMenuOpen(false);
-                }}
-                className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200
-                  ${sortBy === value
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   const processedContent = useMemo(() => {
     if (!article?.full_article) return '';
@@ -510,7 +467,20 @@ export default function FullArticle() {
                             <h2 className="text-xl font-semibold dark:text-gray-100">
                               Comments {comments.length > 0 && `(${comments.length})`}
                             </h2>
-                            <SortMenu />
+                            <div className="relative">
+                              <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="appearance-none bg-white dark:bg-gray-700 border border-gray-200 
+                                  dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 
+                                  dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="likes">Most Liked</option>
+                                <option value="newest">Newest</option>
+                              </select>
+                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 
+                                text-gray-500 pointer-events-none" />
+                            </div>
                           </div>
                         </div>
                         
