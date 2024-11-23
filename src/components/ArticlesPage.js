@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, orderBy, getDocs, limit, startAfter, where } from 'firebase/firestore';
 import Header from './Header';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Spinner } from './ui/Spinner';
 import { useBookmarks } from '../contexts/BookmarkContext';
 import { Bookmark, BookmarkCheck, Newspaper, Search, ChevronDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { ScrollArea } from "./ui/ScrollArea";
 
 const TOPICS = [
   { value: 'ALL', label: 'All Topics' },
@@ -97,6 +99,9 @@ export default function ArticlesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredArticles, setFilteredArticles] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('ALL');
+  const [topicSummary, setTopicSummary] = useState({ summary: '', timestamp: null });
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const fetchArticles = useCallback(async (isInitial = false) => {
     try {
@@ -164,6 +169,38 @@ export default function ArticlesPage() {
     }
   }, [selectedTopic]);
 
+  const fetchTopicSummary = async (topic) => {
+    if (topic === 'ALL') {
+      setTopicSummary({ summary: '', timestamp: null });
+      return;
+    }
+
+    setSummaryLoading(true);
+    try {
+      const summariesRef = collection(db, 'news_summaries');
+      const summaryQuery = query(
+        summariesRef,
+        where('topic', '==', topic),
+        orderBy('timestamp', 'desc'),
+        limit(1)
+      );
+      const summarySnapshot = await getDocs(summaryQuery);
+
+      if (!summarySnapshot.empty) {
+        const doc = summarySnapshot.docs[0];
+        const data = doc.data();
+        setTopicSummary({ summary: data.summary || '', timestamp: data.timestamp });
+      } else {
+        setTopicSummary({ summary: '', timestamp: null });
+      }
+    } catch (err) {
+      console.error("Error fetching summary:", err);
+      setTopicSummary({ summary: '', timestamp: null });
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchArticles(true);
   }, [fetchArticles]);
@@ -175,6 +212,13 @@ export default function ArticlesPage() {
     );
     setFilteredArticles(filtered);
   }, [searchQuery, articles]);
+
+  useEffect(() => {
+    const topicParam = searchParams.get('topic');
+    if (topicParam && TOPICS.some(t => t.value === topicParam)) {
+      handleTopicChange(topicParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setArticles([]);
@@ -196,6 +240,7 @@ export default function ArticlesPage() {
     setArticles([]);
     setHasMore(true);
     lastDocRef.current = null;
+    fetchTopicSummary(newTopic);
   };
 
   if (loading) {
@@ -248,6 +293,27 @@ export default function ArticlesPage() {
             </div>
           </CardHeader>
           <CardContent className="p-4">
+            {selectedTopic !== 'ALL' && (
+              <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
+                {summaryLoading ? (
+                  <div className="flex justify-center p-4">
+                    <Spinner size="sm" />
+                  </div>
+                ) : topicSummary.summary ? (
+                  <>
+                    <h3 className="font-semibold mb-2 dark:text-white">Today's {TOPICS.find(t => t.value === selectedTopic)?.label} Summary:</h3>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown>{topicSummary.summary}</ReactMarkdown>
+                    </div>
+                    {topicSummary.timestamp && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                        Last updated: {formatRelativeDate(topicSummary.timestamp)}
+                      </p>
+                    )}
+                  </>
+                ) : null}
+              </ScrollArea>
+            )}
             <div className="space-y-4">
               {filteredArticles.map((article) => (
                 <div 

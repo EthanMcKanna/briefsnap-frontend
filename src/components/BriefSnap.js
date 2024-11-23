@@ -20,6 +20,11 @@ const TOPICS = [
   { value: 'BUSINESS', label: 'Business' },
   { value: 'TECHNOLOGY', label: 'Technology' },
   { value: 'SPORTS', label: 'Sports' },
+  { value: 'WORLD', label: 'World' },
+  { value: 'NATION', label: 'Nation' },
+  { value: 'ENTERTAINMENT', label: 'Entertainment' },
+  { value: 'SCIENCE', label: 'Science' },
+  { value: 'HEALTH', label: 'Health' },
 ];
 
 const TOPIC_COLORS = {
@@ -43,6 +48,23 @@ const TopicTag = ({ topic }) => {
     <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${colorClasses}`}>
       {label}
     </span>
+  );
+};
+
+const TopicCard = ({ topic, onClick }) => {
+  const colorClasses = TOPIC_COLORS[topic.value] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  return (
+    <button
+      onClick={onClick}
+      className="group relative flex flex-col items-start p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all"
+    >
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClasses} mb-2`}>
+        {topic.label}
+      </span>
+      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+        View {topic.label} Stories →
+      </h3>
+    </button>
   );
 };
 
@@ -184,7 +206,7 @@ export default function BriefSnap() {
       </Helmet>
       <Header />
       <div className="flex flex-col items-center justify-center p-4 flex-grow">
-        <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+        <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center space-x-2">
               <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
@@ -265,6 +287,22 @@ export default function BriefSnap() {
             )}
           </CardContent>
         </Card>
+
+        <div className="w-full max-w-3xl">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+            <Newspaper className="h-5 w-5 mr-2" />
+            Other Topics
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TOPICS.filter(topic => topic.value !== 'ALL' && topic.value !== 'TOP_NEWS').map((topic) => (
+              <TopicCard
+                key={topic.value}
+                topic={topic}
+                onClick={() => navigate(`/articles?topic=${topic.value}`)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
       <Footer />
     </div>
