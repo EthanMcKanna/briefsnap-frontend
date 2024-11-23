@@ -13,6 +13,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { HelmetProvider } from 'react-helmet-async';
 import { CacheProvider } from './contexts/CacheContext';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -25,8 +26,22 @@ function App() {
                 <Routes>
                   <Route path="/" element={<BriefSnap />} />
                   <Route path="/article/:slug" element={<FullArticle />} />
-                  <Route path="/bookmarks" element={<BookmarksPage />} />
-                  <Route path="/settings" element={<UserSettings />} />
+                  <Route 
+                    path="/bookmarks" 
+                    element={
+                      <PrivateRoute>
+                        <BookmarksPage />
+                      </PrivateRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/settings" 
+                    element={
+                      <PrivateRoute>
+                        <UserSettings />
+                      </PrivateRoute>
+                    } 
+                  />
                   <Route path="/articles" element={<ArticlesPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/terms-of-service" element={<TermsOfService />} />
