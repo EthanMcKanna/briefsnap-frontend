@@ -203,7 +203,7 @@ export default function FullArticle() {
     setModerationError('');
 
     try {
-      const response = await fetch('/api/moderate-comment', {
+      const response = await fetch('https://addcomment-t56b56emaq-uc.a.run.app', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
