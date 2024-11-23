@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import { Helmet } from 'react-helmet-async'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
-import { Newspaper, Bookmark, BookmarkCheck, Tag } from 'lucide-react'
+import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, getDocs, where, Timestamp } from 'firebase/firestore'
@@ -316,7 +316,7 @@ export default function BriefSnap() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <Helmet>
         <title>BriefSnap - Your Daily AI-Powered News Summary</title>
         <meta name="description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
@@ -324,213 +324,203 @@ export default function BriefSnap() {
         <meta property="og:description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
       </Helmet>
       <Header />
-      
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid grid-cols-1 gap-8 max-w-3xl mx-auto">
-          {user && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg px-6 py-4 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-2 mb-1">
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {getTimeBasedGreeting()}, {getFirstName(user.displayName)}
-                </h1>
-                <span className="text-2xl" role="img" aria-label="wave">
-                  {getTimeBasedGreeting() === 'Good evening' ? '🌙' : '👋'}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Here's your personalized news briefing for today
-              </p>
+      <div className="flex flex-col items-center justify-center p-4 flex-grow">
+        {user && (
+          <div className="w-full max-w-3xl mb-6">
+            <div className="flex items-center space-x-2 mb-2">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                {getTimeBasedGreeting()}, {getFirstName(user.displayName)}
+              </h1>
+              <span className="text-2xl" role="img" aria-label="wave">
+                {getTimeBasedGreeting() === 'Good evening' ? '🌙' : '👋'}
+              </span>
             </div>
-          )}
-
-          <Card className="shadow-lg">
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center space-x-2">
-                <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">Today's Briefing</CardTitle>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Here's your personalized news briefing for today
+            </p>
+          </div>
+        )}
+        <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">Today's Briefing</CardTitle>
+            </div>
+            <CardDescription className="dark:text-gray-400">Your Daily AI-Powered News Summary</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">{currentDate}</h2>
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <Spinner size="lg" />
               </div>
-              <CardDescription className="dark:text-gray-400">Your Daily AI-Powered News Summary</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <h2 className="text-xl font-semibold mb-4 dark:text-white">{currentDate}</h2>
-              {loading ? (
-                <div className="flex justify-center p-8">
-                  <Spinner size="lg" />
-                </div>
-              ) : error ? (
-                <div className="text-center text-red-500">{error}</div>
-              ) : (
-                <>
-                  <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
-                    <h3 className="font-semibold mb-2 dark:text-white">Summary:</h3>
-                    <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{summary}</ReactMarkdown>
-                    </div>
-                    {!loading && !error && summaryTimestamp && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                        Last updated: {formatRelativeTime(summaryTimestamp)}
-                      </p>
-                    )}
-                  </ScrollArea>
+            ) : error ? (
+              <div className="text-center text-red-500">{error}</div>
+            ) : (
+              <>
+                <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
+                  <h3 className="font-semibold mb-2 dark:text-white">Summary:</h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown>{summary}</ReactMarkdown>
+                  </div>
+                  {!loading && !error && summaryTimestamp && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                      Last updated: {formatRelativeTime(summaryTimestamp)}
+                    </p>
+                  )}
+                </ScrollArea>
 
-                  <div className="mt-6">
-                    <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Today's Stories:</h3>
-                    <div className="space-y-4">
-                      {articles.map((article) => (
-                        <div 
-                          key={article.id} 
-                          className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700 pointer-events-none"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div 
-                              onClick={() => handleReadMore(article.slug)}
-                              className="flex-1 pointer-events-auto cursor-pointer"
-                            >
-                              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
-                              <div className="flex items-center justify-between mt-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatRelativeTime(article.timestamp)}
-                                  </span>
-                                  <TopicTag topic={article.topic} />
-                                </div>
-                                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                                  Read →
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Today's Stories:</h3>
+                  <div className="space-y-4">
+                    {articles.map((article) => (
+                      <div 
+                        key={article.id} 
+                        className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700 pointer-events-none"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div 
+                            onClick={() => handleReadMore(article.slug)}
+                            className="flex-1 pointer-events-auto cursor-pointer"
+                          >
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatRelativeTime(article.timestamp)}
                                 </span>
+                                <TopicTag topic={article.topic} />
+                              </div>
+                              <span className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                                Read →
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => toggleBookmark(article)}
+                            className="ml-4 pointer-events-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                          >
+                            {bookmarks.some(b => b.id === article.id) ? (
+                              <BookmarkCheck className="h-5 w-5" />
+                            ) : (
+                              <Bookmark className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {articles.length === 0 && (
+                      <div className="text-center p-6 text-gray-500 dark:text-gray-400">
+                        No articles available for today.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {userPreferences?.pinnedTopics?.length > 0 && (
+          <div className="flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-3xl space-y-8">
+              {userPreferences.pinnedTopics.map((topic) => {
+                const content = pinnedContent[topic];
+                if (!content) return null;
+
+                return (
+                  <Card key={topic} className="border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                          {TOPICS.find(t => t.value === topic)?.label || topic}
+                        </CardTitle>
+                        <TopicTag topic={topic} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {content.summary && (
+                        <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
+                          <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown>{content.summary}</ReactMarkdown>
+                          </div>
+                          {content.timestamp && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                              Last updated: {formatRelativeTime(content.timestamp)}
+                            </p>
+                          )}
+                        </ScrollArea>
+                      )}
+
+                      {content.articles.length > 0 && (
+                        <div className="space-y-4">
+                          {content.articles.map((article) => (
+                            <div key={article.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+                              <div className="flex justify-between items-start">
+                                <div 
+                                  onClick={() => handleReadMore(article.slug)}
+                                  className="flex-1 pointer-events-auto cursor-pointer"
+                                >
+                                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formatRelativeTime(article.timestamp)}
+                                      </span>
+                                      <TopicTag topic={article.topic} />
+                                    </div>
+                                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                                      Read More →
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => toggleBookmark(article)}
+                                  className="ml-4 pointer-events-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                                >
+                                  {bookmarks.some(b => b.id === article.id) ? (
+                                    <BookmarkCheck className="h-5 w-5" />
+                                  ) : (
+                                    <Bookmark className="h-5 w-5" />
+                                  )}
+                                </button>
                               </div>
                             </div>
-                            <button
-                              onClick={() => toggleBookmark(article)}
-                              className="ml-4 pointer-events-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                            >
-                              {bookmarks.some(b => b.id === article.id) ? (
-                                <BookmarkCheck className="h-5 w-5" />
-                              ) : (
-                                <Bookmark className="h-5 w-5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      {articles.length === 0 && (
-                        <div className="text-center p-6 text-gray-500 dark:text-gray-400">
-                          No articles available for today.
+                          ))}
                         </div>
                       )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {userPreferences?.pinnedTopics?.length > 0 && (
-            <section className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                <Tag className="h-5 w-5 mr-2" />
-                Your Pinned Topics
-              </h2>
-              <div className="grid gap-6">
-                {userPreferences.pinnedTopics.map((topic) => {
-                  const content = pinnedContent[topic];
-                  if (!content) return null;
-
-                  return (
-                    <Card key={topic} className="border-gray-200 dark:border-gray-800 dark:bg-gray-800">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                            {TOPICS.find(t => t.value === topic)?.label || topic}
-                          </CardTitle>
-                          <TopicTag topic={topic} />
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {content.summary && (
-                          <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
-                            <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{content.summary}</ReactMarkdown>
-                            </div>
-                            {content.timestamp && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                                Last updated: {formatRelativeTime(content.timestamp)}
-                              </p>
-                            )}
-                          </ScrollArea>
-                        )}
-
-                        {content.articles.length > 0 && (
-                          <div className="space-y-4">
-                            {content.articles.map((article) => (
-                              <div key={article.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
-                                <div className="flex justify-between items-start">
-                                  <div 
-                                    onClick={() => handleReadMore(article.slug)}
-                                    className="flex-1 pointer-events-auto cursor-pointer"
-                                  >
-                                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
-                                    <div className="flex items-center justify-between mt-2">
-                                      <div className="flex items-center space-x-2">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                          {formatRelativeTime(article.timestamp)}
-                                        </span>
-                                        <TopicTag topic={article.topic} />
-                                      </div>
-                                      <span className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                                        Read More →
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() => toggleBookmark(article)}
-                                    className="ml-4 pointer-events-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                                  >
-                                    {bookmarks.some(b => b.id === article.id) ? (
-                                      <BookmarkCheck className="h-5 w-5" />
-                                    ) : (
-                                      <Bookmark className="h-5 w-5" />
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          <section className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <Newspaper className="h-5 w-5 mr-2" />
-              Other Topics
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TOPICS.filter(topic => (
-                topic.value !== 'ALL' && 
-                topic.value !== 'TOP_NEWS' && 
-                !(userPreferences?.pinnedTopics || []).includes(topic.value)
-              )).map((topic) => (
-                <TopicCard
-                  key={topic.value}
-                  topic={topic}
-                  onClick={() => navigate(`/articles?topic=${topic.value}`)}
-                />
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-          </section>
+          </div>
+        )}
 
-          {!user && <LoginPrompt />}
+        <div className="w-full max-w-3xl">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+            <Newspaper className="h-5 w-5 mr-2" />
+            Other Topics
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {TOPICS.filter(topic => (
+              topic.value !== 'ALL' && 
+              topic.value !== 'TOP_NEWS' && 
+              !(userPreferences?.pinnedTopics || []).includes(topic.value)
+            )).map((topic) => (
+              <TopicCard
+                key={topic.value}
+                topic={topic}
+                onClick={() => navigate(`/articles?topic=${topic.value}`)}
+              />
+            ))}
+          </div>
         </div>
-      </main>
-      
-      <Footer />
+        {!user && <LoginPrompt />}
+        <Footer />
+      </div>
     </div>
   );
 }
