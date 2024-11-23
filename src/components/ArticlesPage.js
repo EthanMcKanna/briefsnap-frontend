@@ -213,12 +213,22 @@ export default function ArticlesPage() {
     setFilteredArticles(filtered);
   }, [searchQuery, articles]);
 
+  const handleTopicChange = useCallback((newTopic) => {
+    console.log('Handling topic change:', newTopic);
+    setSelectedTopic(newTopic);
+    setFilteredArticles([]); 
+    setArticles([]);
+    setHasMore(true);
+    lastDocRef.current = null;
+    fetchTopicSummary(newTopic);
+  }, [fetchTopicSummary]);
+
   useEffect(() => {
     const topicParam = searchParams.get('topic');
     if (topicParam && TOPICS.some(t => t.value === topicParam)) {
       handleTopicChange(topicParam);
     }
-  }, [searchParams]);
+  }, [searchParams, handleTopicChange]);
 
   useEffect(() => {
     setArticles([]);
@@ -231,16 +241,6 @@ export default function ArticlesPage() {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     await fetchArticles(false);
-  };
-
-  const handleTopicChange = (newTopic) => {
-    console.log('Handling topic change:', newTopic);
-    setSelectedTopic(newTopic);
-    setFilteredArticles([]); 
-    setArticles([]);
-    setHasMore(true);
-    lastDocRef.current = null;
-    fetchTopicSummary(newTopic);
   };
 
   if (loading) {
