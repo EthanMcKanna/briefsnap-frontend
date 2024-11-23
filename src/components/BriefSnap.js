@@ -339,11 +339,11 @@ export default function BriefSnap() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Here's your personalized briefing for today
             </p>
-            {userPreferences?.location && (
+            {/* {userPreferences?.location && (
               <div className="mt-4">
                 <Weather location={userPreferences.location} />
               </div>
-            )}
+            )} */}
           </div>
         )}
 

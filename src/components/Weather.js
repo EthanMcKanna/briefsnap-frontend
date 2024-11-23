@@ -36,18 +36,25 @@ const formatTime = (time) => {
   return new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
+const RETRY_DELAY = 5000;
+const MAX_RETRIES = 3;
+
 export default function Weather({ location }) {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('current');
   const { cacheWeather, getCachedWeather } = useCache();
+  const [retryCount, setRetryCount] = useState(0);
+  const fetchWeatherRef = React.useRef(null);
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    const fetchWeather = async (attempt = 0) => {
       if (!location) return;
       
       try {
         setLoading(true);
+        setError(null);
 
         const cachedData = getCachedWeather(location);
         if (cachedData) {
@@ -59,36 +66,104 @@ export default function Weather({ location }) {
         const geoResponse = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
         );
+        
+        if (!geoResponse.ok) {
+          throw new Error('Location lookup failed');
+        }
+
         const geoData = await geoResponse.json();
         
-        if (geoData && geoData[0]) {
-          const { lat, lon } = geoData[0];
-          
-          const response = await fetch(
-            `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR`
-          );
-          const data = await response.json();
-          
-          cacheWeather(location, data);
-          setWeather(data);
+        if (!geoData || geoData.length === 0) {
+          throw new Error(`Location "${location}" not found`);
         }
+
+        const { lat, lon } = geoData[0];
+        
+        const response = await fetch(
+          `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR&units=imperial`
+        );
+        
+        if (response.status === 429 && attempt < MAX_RETRIES) {
+          // Rate limited, retry after delay
+          console.log(`Rate limited, retrying in ${RETRY_DELAY}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          return fetchWeather(attempt + 1);
+        }
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            throw new Error('Weather service is busy. Please try again in a few minutes.');
+          }
+          throw new Error('Weather service unavailable');
+        }
+
+        const data = await response.json();
+        
+        // Validate required data
+        if (!data.timelines?.minutely?.[0] || 
+            !data.timelines?.hourly || 
+            !data.timelines?.daily) {
+          throw new Error('Invalid weather data format');
+        }
+
+        cacheWeather(location, data);
+        setWeather(data);
+        setRetryCount(0); // Reset retry count on success
+
       } catch (error) {
         console.error('Error fetching weather:', error);
+        setError(error.message);
+        setRetryCount(attempt);
       } finally {
         setLoading(false);
       }
     };
 
+    fetchWeatherRef.current = fetchWeather;
     fetchWeather();
   }, [location, cacheWeather, getCachedWeather]);
 
-  if (!location || loading || !weather) return null;
+  if (!location) return null;
+  
+  if (loading) {
+    return (
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardContent className="p-4 flex justify-center items-center">
+          <div className="text-gray-500 dark:text-gray-400">
+            {retryCount > 0 ? `Retrying... (${retryCount}/${MAX_RETRIES})` : 'Loading weather...'}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-2 text-red-500 dark:text-red-400">
+            <span className="text-sm">{error}</span>
+            {retryCount > 0 && (
+              <button
+                onClick={() => fetchWeatherRef.current?.(0)}
+                className="text-sm underline hover:no-underline"
+              >
+                Try again
+              </button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!weather) return null;
 
   const current = weather.timelines.minutely[0];
   const hourly = weather.timelines.hourly.slice(0, 24);
   const daily = weather.timelines.daily.slice(0, 5);
-  const tempF = Math.round(celsiusToFahrenheit(current.values.temperature));
-  const feelsLikeF = Math.round(celsiusToFahrenheit(current.values.temperatureApparent));
+  const tempF = Math.round(current.values.temperature);
+  const feelsLikeF = Math.round(current.values.temperatureApparent);
 
   return (
     <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
