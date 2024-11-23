@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Header from './Header';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/Card';
-import { Settings, Bell, Monitor, ChevronDown, Tag, PlusCircle, XCircle } from 'lucide-react';
+import { Settings, Bell, Monitor, ChevronDown, Tag, PlusCircle, XCircle, MapPin } from 'lucide-react';
 
 const TOPICS = [
   { value: 'BUSINESS', label: 'Business' },
@@ -110,6 +110,46 @@ export default function UserSettings() {
                     <option value="dark">Dark</option>
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Location
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Enter city name"
+                    value={userPreferences.location || ''}
+                    onChange={(e) => handlePreferenceChange('location', e.target.value)}
+                    className="appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (navigator.geolocation) {
+                        try {
+                          const position = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject);
+                          });
+                          
+                          const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+                          );
+                          const data = await response.json();
+                          handlePreferenceChange('location', data.address.city || data.address.town);
+                        } catch (error) {
+                          console.error('Error getting location:', error);
+                        }
+                      }
+                    }}
+                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <MapPin className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 

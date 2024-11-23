@@ -14,6 +14,7 @@ import { useBookmarks } from '../contexts/BookmarkContext';
 import Footer from './Footer';
 import { useCache } from '../contexts/CacheContext';
 import { useAuth } from '../contexts/AuthContext';
+import Weather from './Weather';
 
 const TOPICS = [
   { value: 'ALL', label: 'All Topics' },
@@ -338,8 +339,14 @@ export default function BriefSnap() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Here's your personalized news briefing for today
             </p>
+            {userPreferences?.location && (
+              <div className="mt-4">
+                <Weather location={userPreferences.location} />
+              </div>
+            )}
           </div>
         )}
+
         <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center space-x-2">
@@ -472,7 +479,7 @@ export default function BriefSnap() {
                                       <TopicTag topic={article.topic} />
                                     </div>
                                     <span className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                                      Read More →
+                                      Read →
                                     </span>
                                   </div>
                                 </div>

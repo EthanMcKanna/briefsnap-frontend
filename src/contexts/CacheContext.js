@@ -8,6 +8,7 @@ export function CacheProvider({ children }) {
   const [summaryCache, setSummaryCache] = useState(null);
   const [commentsCache, setCommentsCache] = useState(new Map());
   const [pinnedTopicsCache, setPinnedTopicsCache] = useState(new Map());
+  const [weatherCache, setWeatherCache] = useState(new Map());
 
   const cacheArticles = useCallback((articles, query = 'default') => {
     console.log(`💾 Caching articles (${query})`);
@@ -148,6 +149,33 @@ export function CacheProvider({ children }) {
     return cached.data;
   }, [pinnedTopicsCache, CACHE_EXPIRY]);
 
+  const cacheWeather = useCallback((location, data) => {
+    console.log(`💾 Caching weather for ${location}`);
+    setWeatherCache(prev => new Map(prev).set(location.toLowerCase(), {
+      data,
+      timestamp: Date.now()
+    }));
+  }, []);
+
+  const getCachedWeather = useCallback((location) => {
+    const cached = weatherCache.get(location.toLowerCase());
+    if (!cached) {
+      console.log(`🔍 Cache miss: weather for ${location}`);
+      return null;
+    }
+    if (Date.now() - cached.timestamp > 30 * 60 * 1000) {
+      console.log(`⌛ Cache expired: weather for ${location}`);
+      setWeatherCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(location.toLowerCase());
+        return newCache;
+      });
+      return null;
+    }
+    console.log(`✅ Cache hit: weather for ${location}`);
+    return cached.data;
+  }, [weatherCache]);
+
   const cacheSitemapArticles = (articles) => {
     localStorage.setItem('sitemap_articles', JSON.stringify({
       data: articles,
@@ -174,6 +202,7 @@ export function CacheProvider({ children }) {
     setArticlesCache(new Map());
     setSummaryCache(null);
     setCommentsCache(new Map());
+    setWeatherCache(new Map());
   }, []);
 
   return (
@@ -188,6 +217,8 @@ export function CacheProvider({ children }) {
       getCachedComments,
       cachePinnedTopic,
       getCachedPinnedTopic,
+      cacheWeather,
+      getCachedWeather,
       cacheSitemapArticles,
       getCachedSitemapArticles,
       clearCache
