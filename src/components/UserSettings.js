@@ -3,7 +3,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Header from './Header';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/Card';
-import { Settings, Bell, Monitor, ChevronDown } from 'lucide-react';
+import { Settings, Bell, Monitor, ChevronDown, Tag, PlusCircle, XCircle } from 'lucide-react';
+
+const TOPICS = [
+  { value: 'BUSINESS', label: 'Business' },
+  { value: 'TECHNOLOGY', label: 'Technology' },
+  { value: 'SPORTS', label: 'Sports' },
+  { value: 'WORLD', label: 'World' },
+  { value: 'NATION', label: 'Nation' },
+  { value: 'ENTERTAINMENT', label: 'Entertainment' },
+  { value: 'SCIENCE', label: 'Science' },
+  { value: 'HEALTH', label: 'Health' },
+];
 
 export default function UserSettings() {
   const { user, userPreferences, updatePreferences } = useAuth();
@@ -17,6 +28,21 @@ export default function UserSettings() {
       setTheme(value);
     }
     setIsSaving(false);
+  };
+
+  const handleTopicPin = async (topic) => {
+    const currentPinnedTopics = userPreferences.pinnedTopics || [];
+    let newPinnedTopics;
+    
+    if (currentPinnedTopics.includes(topic)) {
+      newPinnedTopics = currentPinnedTopics.filter(t => t !== topic);
+    } else if (currentPinnedTopics.length < 3) {
+      newPinnedTopics = [...currentPinnedTopics, topic];
+    } else {
+      return;
+    }
+    
+    await handlePreferenceChange('pinnedTopics', newPinnedTopics);
   };
 
   return (
@@ -85,6 +111,49 @@ export default function UserSettings() {
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Tag className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Pinned Topics
+                  </label>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    (up to 3)
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {TOPICS.map((topic) => {
+                  const isPinned = (userPreferences.pinnedTopics || []).includes(topic.value);
+                  return (
+                    <button
+                      key={topic.value}
+                      onClick={() => handleTopicPin(topic.value)}
+                      disabled={isSaving}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                        isPinned
+                          ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800'
+                          : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
+                      }`}
+                    >
+                      <span className={`text-sm ${
+                        isPinned
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {topic.label}
+                      </span>
+                      {isPinned ? (
+                        <XCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <PlusCircle className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </CardContent>

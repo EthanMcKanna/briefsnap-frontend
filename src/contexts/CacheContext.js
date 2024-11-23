@@ -7,6 +7,7 @@ export function CacheProvider({ children }) {
   const [articlesCache, setArticlesCache] = useState(new Map());
   const [summaryCache, setSummaryCache] = useState(null);
   const [commentsCache, setCommentsCache] = useState(new Map());
+  const [pinnedTopicsCache, setPinnedTopicsCache] = useState(new Map());
 
   const cacheArticles = useCallback((articles, query = 'default') => {
     console.log(`💾 Caching articles (${query})`);
@@ -120,6 +121,33 @@ export function CacheProvider({ children }) {
     return sortedComments;
   }, [commentsCache, CACHE_EXPIRY]);
 
+  const cachePinnedTopic = useCallback((topic, content) => {
+    console.log(`💾 Caching pinned topic (${topic})`);
+    setPinnedTopicsCache(prev => new Map(prev).set(topic, {
+      data: content,
+      timestamp: Date.now()
+    }));
+  }, []);
+
+  const getCachedPinnedTopic = useCallback((topic) => {
+    const cached = pinnedTopicsCache.get(topic);
+    if (!cached) {
+      console.log(`🔍 Cache miss: pinned topic (${topic})`);
+      return null;
+    }
+    if (Date.now() - cached.timestamp > CACHE_EXPIRY) {
+      console.log(`⌛ Cache expired: pinned topic (${topic})`);
+      setPinnedTopicsCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(topic);
+        return newCache;
+      });
+      return null;
+    }
+    console.log(`✅ Cache hit: pinned topic (${topic})`);
+    return cached.data;
+  }, [pinnedTopicsCache, CACHE_EXPIRY]);
+
   const cacheSitemapArticles = (articles) => {
     localStorage.setItem('sitemap_articles', JSON.stringify({
       data: articles,
@@ -158,6 +186,8 @@ export function CacheProvider({ children }) {
       getCachedSummary,
       cacheComments,
       getCachedComments,
+      cachePinnedTopic,
+      getCachedPinnedTopic,
       cacheSitemapArticles,
       getCachedSitemapArticles,
       clearCache

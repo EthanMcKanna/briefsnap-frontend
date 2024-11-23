@@ -13,6 +13,7 @@ import Header from './Header'
 import { useBookmarks } from '../contexts/BookmarkContext';
 import Footer from './Footer';
 import { useCache } from '../contexts/CacheContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const TOPICS = [
   { value: 'ALL', label: 'All Topics' },
@@ -85,6 +86,8 @@ const formatRelativeTime = (timestamp) => {
 };
 
 export default function BriefSnap() {
+  const { userPreferences } = useAuth();
+  const [pinnedContent, setPinnedContent] = useState({});
   const [summary, setSummary] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -192,6 +195,78 @@ export default function BriefSnap() {
     fetchSummaryAndArticles();
   }, [getCachedSummary, cacheSummary, getCachedArticles, cacheArticles]);
 
+  useEffect(() => {
+    const fetchPinnedContent = async () => {
+      const pinnedTopics = userPreferences?.pinnedTopics || [];
+      if (pinnedTopics.length === 0) return;
+
+      const content = {};
+      
+      for (const topic of pinnedTopics) {
+        try {
+          const summariesRef = collection(db, 'news_summaries');
+          const summaryQuery = query(
+            summariesRef,
+            where('topic', '==', topic),
+            orderBy('timestamp', 'desc'),
+            limit(1)
+          );
+          const summarySnapshot = await getDocs(summaryQuery);
+          
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const articlesRef = collection(db, 'articles');
+          const todayQuery = query(
+            articlesRef,
+            where('topic', '==', topic),
+            where('timestamp', '>=', Timestamp.fromDate(today)),
+            orderBy('timestamp', 'desc')
+          );
+          
+          const todaySnapshot = await getDocs(todayQuery);
+          let articlesData = todaySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+
+          if (articlesData.length < 3) {
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const yesterdayQuery = query(
+              articlesRef,
+              where('topic', '==', topic),
+              where('timestamp', '>=', Timestamp.fromDate(yesterday)),
+              where('timestamp', '<', Timestamp.fromDate(today)),
+              orderBy('timestamp', 'desc')
+            );
+            
+            const yesterdaySnapshot = await getDocs(yesterdayQuery);
+            const yesterdayArticles = yesterdaySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            
+            articlesData = [...articlesData, ...yesterdayArticles];
+          }
+          
+          content[topic] = {
+            summary: summarySnapshot.docs[0]?.data()?.summary || '',
+            timestamp: summarySnapshot.docs[0]?.data()?.timestamp,
+            articles: articlesData
+          };
+        } catch (err) {
+          console.error(`Error fetching content for topic ${topic}:`, err);
+        }
+      }
+      
+      setPinnedContent(content);
+    };
+
+    fetchPinnedContent();
+  }, [userPreferences?.pinnedTopics]);
+
   const handleReadMore = (slug) => {
     navigate(`/article/${slug}`)
   }
@@ -288,13 +363,94 @@ export default function BriefSnap() {
           </CardContent>
         </Card>
 
+        {userPreferences?.pinnedTopics?.length > 0 && (
+          <div className="flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-3xl space-y-8">
+              {userPreferences.pinnedTopics.map((topic) => {
+                const content = pinnedContent[topic];
+                if (!content) return null;
+
+                return (
+                  <Card key={topic} className="border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                          {TOPICS.find(t => t.value === topic)?.label || topic}
+                        </CardTitle>
+                        <TopicTag topic={topic} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {content.summary && (
+                        <ScrollArea className="rounded-md border p-4 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 mb-6">
+                          <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown>{content.summary}</ReactMarkdown>
+                          </div>
+                          {content.timestamp && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                              Last updated: {formatRelativeTime(content.timestamp)}
+                            </p>
+                          )}
+                        </ScrollArea>
+                      )}
+
+                      {content.articles.length > 0 && (
+                        <div className="space-y-4">
+                          {content.articles.map((article) => (
+                            <div key={article.id} className="rounded-lg border p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+                              <div className="flex justify-between items-start">
+                                <div 
+                                  onClick={() => handleReadMore(article.slug)}
+                                  className="flex-1 pointer-events-auto cursor-pointer"
+                                >
+                                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{article.title}</h4>
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">{article.description}</p>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formatRelativeTime(article.timestamp)}
+                                      </span>
+                                      <TopicTag topic={article.topic} />
+                                    </div>
+                                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                                      Read More →
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => toggleBookmark(article)}
+                                  className="ml-4 pointer-events-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                                >
+                                  {bookmarks.some(b => b.id === article.id) ? (
+                                    <BookmarkCheck className="h-5 w-5" />
+                                  ) : (
+                                    <Bookmark className="h-5 w-5" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="w-full max-w-3xl">
           <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
             <Newspaper className="h-5 w-5 mr-2" />
             Other Topics
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TOPICS.filter(topic => topic.value !== 'ALL' && topic.value !== 'TOP_NEWS').map((topic) => (
+            {TOPICS.filter(topic => (
+              topic.value !== 'ALL' && 
+              topic.value !== 'TOP_NEWS' && 
+              !(userPreferences?.pinnedTopics || []).includes(topic.value)
+            )).map((topic) => (
               <TopicCard
                 key={topic.value}
                 topic={topic}
