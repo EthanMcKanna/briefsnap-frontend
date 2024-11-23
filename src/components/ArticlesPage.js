@@ -169,38 +169,6 @@ export default function ArticlesPage() {
     }
   }, [selectedTopic]);
 
-  const fetchTopicSummary = async (topic) => {
-    if (topic === 'ALL') {
-      setTopicSummary({ summary: '', timestamp: null });
-      return;
-    }
-
-    setSummaryLoading(true);
-    try {
-      const summariesRef = collection(db, 'news_summaries');
-      const summaryQuery = query(
-        summariesRef,
-        where('topic', '==', topic),
-        orderBy('timestamp', 'desc'),
-        limit(1)
-      );
-      const summarySnapshot = await getDocs(summaryQuery);
-
-      if (!summarySnapshot.empty) {
-        const doc = summarySnapshot.docs[0];
-        const data = doc.data();
-        setTopicSummary({ summary: data.summary || '', timestamp: data.timestamp });
-      } else {
-        setTopicSummary({ summary: '', timestamp: null });
-      }
-    } catch (err) {
-      console.error("Error fetching summary:", err);
-      setTopicSummary({ summary: '', timestamp: null });
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchArticles(true);
   }, [fetchArticles]);
@@ -220,8 +188,41 @@ export default function ArticlesPage() {
     setArticles([]);
     setHasMore(true);
     lastDocRef.current = null;
+
+    const fetchTopicSummary = async (topic) => {
+      if (topic === 'ALL') {
+        setTopicSummary({ summary: '', timestamp: null });
+        return;
+      }
+
+      setSummaryLoading(true);
+      try {
+        const summariesRef = collection(db, 'news_summaries');
+        const summaryQuery = query(
+          summariesRef,
+          where('topic', '==', topic),
+          orderBy('timestamp', 'desc'),
+          limit(1)
+        );
+        const summarySnapshot = await getDocs(summaryQuery);
+
+        if (!summarySnapshot.empty) {
+          const doc = summarySnapshot.docs[0];
+          const data = doc.data();
+          setTopicSummary({ summary: data.summary || '', timestamp: data.timestamp });
+        } else {
+          setTopicSummary({ summary: '', timestamp: null });
+        }
+      } catch (err) {
+        console.error("Error fetching summary:", err);
+        setTopicSummary({ summary: '', timestamp: null });
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+
     fetchTopicSummary(newTopic);
-  }, [fetchTopicSummary]);
+  }, []);
 
   useEffect(() => {
     const topicParam = searchParams.get('topic');
