@@ -17,5 +17,9 @@ export default defineConfig({
         '.js': 'jsx'
       }
     }
+  },
+  build: {
+    outDir: 'build',
+    emptyOutDir: true
   }
 })
