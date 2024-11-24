@@ -94,6 +94,21 @@ const TopicMenu = ({ selectedTopic, onTopicChange }) => (
   </div>
 );
 
+const ArticleSkeleton = () => (
+  <div className="flex items-start justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="flex-1">
+      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2 animate-pulse"></div>
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-1 animate-pulse"></div>
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2 animate-pulse"></div>
+      <div className="flex items-center space-x-2 mt-2">
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+      </div>
+    </div>
+    <div className="ml-4 h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+  </div>
+);
+
 export default function ArticlesPage() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -256,8 +271,26 @@ export default function ArticlesPage() {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
         <Header />
-        <div className="flex justify-center items-center h-[calc(100vh-64px)]">
-          <Spinner size="lg" />
+        <div className="max-w-4xl mx-auto p-4">
+          <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center space-x-2">
+                <Newspaper className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">All Stories</CardTitle>
+              </div>
+              <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-[200px] animate-pulse"></div>
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1 animate-pulse"></div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <ArticleSkeleton key={i} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -353,6 +386,13 @@ export default function ArticlesPage() {
                   </button>
                 </div>
               ))}
+              {loadingMore && (
+                <>
+                  {[...Array(3)].map((_, i) => (
+                    <ArticleSkeleton key={`more-${i}`} />
+                  ))}
+                </>
+              )}
               {filteredArticles.length === 0 && !loading && (
                 <div className="text-center p-8 text-gray-500 dark:text-gray-400">
                   {searchQuery ? 'No articles match your search.' : 'No articles available.'}

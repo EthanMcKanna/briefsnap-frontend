@@ -3,6 +3,46 @@ import { Cloud, CloudRain, Sun, Wind, CloudSnow, Cloudy, CloudLightning, Droplet
 import { Card, CardContent } from './ui/Card';
 import { useCache } from '../contexts/CacheContext';
 
+// Add these new components at the top
+const Skeleton = ({ className }) => (
+  <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`} />
+);
+
+const WeatherSkeleton = () => (
+  <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+    <CardContent className="p-4">
+      <div className="flex items-start justify-between mb-6">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="flex flex-col items-end">
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-4 w-24 mt-1" />
+        </div>
+      </div>
+
+      <div className="flex space-x-4 mb-4">
+        <Skeleton className="h-8 w-16" />
+        <Skeleton className="h-8 w-16" />
+        <Skeleton className="h-8 w-16" />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <Skeleton className="w-5 h-5" />
+            <div className="flex-1">
+              <Skeleton className="h-3 w-16 mb-1" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const WeatherIcon = ({ code }) => {
   const iconClasses = "w-6 h-6 text-gray-700 dark:text-gray-300";
   
@@ -22,10 +62,6 @@ const WeatherIcon = ({ code }) => {
     default:
       return <Wind className={iconClasses} />;
   }
-};
-
-const celsiusToFahrenheit = (celsius) => {
-  return (celsius * 9/5) + 32;
 };
 
 const getDayName = (date) => {
@@ -126,15 +162,7 @@ export default function Weather({ location }) {
   if (!location) return null;
   
   if (loading) {
-    return (
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <CardContent className="p-4 flex justify-center items-center">
-          <div className="text-gray-500 dark:text-gray-400">
-            {retryCount > 0 ? `Retrying... (${retryCount}/${MAX_RETRIES})` : 'Loading weather...'}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WeatherSkeleton />;
   }
 
   if (error) {
@@ -230,8 +258,8 @@ export default function Weather({ location }) {
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">High/Low</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {Math.round(celsiusToFahrenheit(daily[0].values.temperatureMax))}°/
-                  {Math.round(celsiusToFahrenheit(daily[0].values.temperatureMin))}°
+                  {Math.round(daily[0].values.temperatureMax)}°/
+                  {Math.round(daily[0].values.temperatureMin)}°
                 </p>
               </div>
             </div>
@@ -276,7 +304,7 @@ export default function Weather({ location }) {
                     </span>
                     <WeatherIcon code={hour.values.weatherCode} />
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {Math.round(celsiusToFahrenheit(hour.values.temperature))}°
+                      {Math.round(hour.values.temperature)}°
                     </span>
                   </div>
                 ))}
@@ -300,10 +328,10 @@ export default function Weather({ location }) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {Math.round(celsiusToFahrenheit(day.values.temperatureMax))}°
+                    {Math.round(day.values.temperatureMax)}°
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {Math.round(celsiusToFahrenheit(day.values.temperatureMin))}°
+                    {Math.round(day.values.temperatureMin)}°
                   </span>
                 </div>
               </div>
