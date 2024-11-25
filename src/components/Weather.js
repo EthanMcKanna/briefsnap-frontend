@@ -3,7 +3,6 @@ import { Cloud, CloudRain, Sun, Wind, CloudSnow, Cloudy, CloudLightning, Droplet
 import { Card, CardContent } from './ui/Card';
 import { useCache } from '../contexts/CacheContext';
 
-// Add these new components at the top
 const Skeleton = ({ className }) => (
   <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`} />
 );
@@ -118,9 +117,9 @@ export default function Weather({ location }) {
 
         const { lat, lon } = geoData[0];
         
-        const response = await fetch(
-          `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR&units=imperial`
-        );
+        // const response = await fetch(
+        //   `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR&units=imperial`
+        // );
         
         if (response.status === 429 && attempt < MAX_RETRIES) {
           // Rate limited, retry after delay

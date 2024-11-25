@@ -16,6 +16,7 @@ import { useCache } from '../contexts/CacheContext';
 import { useAuth } from '../contexts/AuthContext';
 import Weather from './Weather';
 import CalendarEvents from './CalendarEvents';
+import MarketWidget from './MarketWidget';
 
 const TOPICS = [
   { value: 'ALL', label: 'All Topics' },
@@ -350,6 +351,12 @@ export default function BriefSnap() {
 
         {user && userPreferences?.calendarIntegration && (
           <CalendarEvents events={calendarEvents} />
+        )}
+
+        {user && userPreferences?.showMarketWidget && (
+          <div className="w-full max-w-3xl mb-8">
+            <MarketWidget />
+          </div>
         )}
 
         <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">
