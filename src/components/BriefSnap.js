@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import { Helmet } from 'react-helmet-async'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
-import { Newspaper, Bookmark, BookmarkCheck } from 'lucide-react'
+import { Newspaper, Bookmark, BookmarkCheck, Calendar } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, getDocs, where, Timestamp } from 'firebase/firestore'
@@ -15,6 +15,7 @@ import Footer from './Footer';
 import { useCache } from '../contexts/CacheContext';
 import { useAuth } from '../contexts/AuthContext';
 import Weather from './Weather';
+import CalendarEvents from './CalendarEvents';
 
 const TOPICS = [
   { value: 'ALL', label: 'All Topics' },
@@ -115,7 +116,7 @@ const LoginPrompt = () => {
 };
 
 export default function BriefSnap() {
-  const { user, userPreferences } = useAuth();
+  const { user, userPreferences, calendarEvents, fetchCalendarEvents } = useAuth();
   const [pinnedContent, setPinnedContent] = useState({});
   const [summary, setSummary] = useState('')
   const [loading, setLoading] = useState(true)
@@ -339,12 +340,16 @@ export default function BriefSnap() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Here's your personalized briefing for today
             </p>
-            {userPreferences?.location && (
+            {userPreferences?.showWeather && userPreferences?.location && (
               <div className="mt-4">
                 <Weather location={userPreferences.location} />
               </div>
             )}
           </div>
+        )}
+
+        {user && userPreferences?.calendarIntegration && (
+          <CalendarEvents events={calendarEvents} />
         )}
 
         <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">

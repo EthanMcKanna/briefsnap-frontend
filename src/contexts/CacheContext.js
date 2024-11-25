@@ -9,6 +9,7 @@ export function CacheProvider({ children }) {
   const [commentsCache, setCommentsCache] = useState(new Map());
   const [pinnedTopicsCache, setPinnedTopicsCache] = useState(new Map());
   const [weatherCache, setWeatherCache] = useState(new Map());
+  const [calendarCache, setCalendarCache] = useState(null);
 
   const cacheArticles = useCallback((articles, query = 'default') => {
     console.log(`💾 Caching articles (${query})`);
@@ -176,6 +177,28 @@ export function CacheProvider({ children }) {
     return cached.data;
   }, [weatherCache]);
 
+  const cacheCalendarEvents = useCallback((events) => {
+    console.log('💾 Caching calendar events');
+    setCalendarCache({
+      data: events,
+      timestamp: Date.now()
+    });
+  }, []);
+
+  const getCachedCalendarEvents = useCallback(() => {
+    if (!calendarCache) {
+      console.log('🔍 Cache miss: calendar events');
+      return null;
+    }
+    if (Date.now() - calendarCache.timestamp > CACHE_EXPIRY) {
+      console.log('⌛ Cache expired: calendar events');
+      setCalendarCache(null);
+      return null;
+    }
+    console.log('✅ Cache hit: calendar events');
+    return calendarCache.data;
+  }, [calendarCache, CACHE_EXPIRY]);
+
   const cacheSitemapArticles = (articles) => {
     localStorage.setItem('sitemap_articles', JSON.stringify({
       data: articles,
@@ -219,6 +242,8 @@ export function CacheProvider({ children }) {
       getCachedPinnedTopic,
       cacheWeather,
       getCachedWeather,
+      cacheCalendarEvents,
+      getCachedCalendarEvents,
       cacheSitemapArticles,
       getCachedSitemapArticles,
       clearCache

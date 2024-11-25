@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,5 +18,13 @@ const auth = getAuth(app)
 const userCollection = 'users';
 const bookmarksCollection = 'bookmarks';
 const commentsCollection = 'comments';
+const calendarTokensCollection = 'calendar_tokens';
 
-export { db, auth, userCollection, bookmarksCollection, commentsCollection }
+export { 
+  db, 
+  auth, 
+  userCollection, 
+  bookmarksCollection, 
+  commentsCollection, 
+  calendarTokensCollection 
+}

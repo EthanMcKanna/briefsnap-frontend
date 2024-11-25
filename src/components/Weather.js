@@ -85,6 +85,8 @@ export default function Weather({ location }) {
   const fetchWeatherRef = React.useRef(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+    
     const fetchWeather = async (attempt = 0) => {
       if (!location) return;
       
@@ -100,7 +102,8 @@ export default function Weather({ location }) {
         }
 
         const geoResponse = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`,
+          { signal: controller.signal }
         );
         
         if (!geoResponse.ok) {
@@ -147,6 +150,7 @@ export default function Weather({ location }) {
         setRetryCount(0); // Reset retry count on success
 
       } catch (error) {
+        if (error.name === 'AbortError') return;
         console.error('Error fetching weather:', error);
         setError(error.message);
         setRetryCount(attempt);
@@ -157,6 +161,10 @@ export default function Weather({ location }) {
 
     fetchWeatherRef.current = fetchWeather;
     fetchWeather();
+
+    return () => {
+      controller.abort();
+    };
   }, [location, cacheWeather, getCachedWeather]);
 
   if (!location) return null;
