@@ -117,9 +117,9 @@ export default function Weather({ location }) {
 
         const { lat, lon } = geoData[0];
         
-        // const response = await fetch(
-        //   `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR&units=imperial`
-        // );
+        const response = await fetch(
+          `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR&units=imperial`
+        );
         
         if (response.status === 429 && attempt < MAX_RETRIES) {
           // Rate limited, retry after delay
