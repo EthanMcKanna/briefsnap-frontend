@@ -17,6 +17,8 @@ export function AuthProvider({ children }) {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [isCalendarAuthorizing, setIsCalendarAuthorizing] = useState(false);
   const [calendarToken, setCalendarToken] = useState(null);
+  const [userCalendars, setUserCalendars] = useState([]);
+  const [calendarVisibility, setCalendarVisibility] = useState({});
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -38,6 +40,7 @@ export function AuthProvider({ children }) {
               console.log('Setting calendar token');
               setCalendarToken(token);
             }
+            setCalendarVisibility(userDoc.data().calendarVisibility || {});
           } else {
             // Create new user profile
             await setDoc(doc(db, userCollection, user.uid), {
@@ -104,6 +107,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const fetchUserCalendars = async (accessToken) => {
+    try {
+      const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch calendars');
+
+      const data = await response.json();
+      setUserCalendars(data.items || []);
+      return data.items;
+    } catch (error) {
+      console.error('Error fetching calendars:', error);
+      return [];
+    }
+  };
+
   const fetchCalendarEvents = async () => {
     console.log('Attempting to fetch calendar events');
     console.log('Current state:', {
@@ -130,46 +153,42 @@ export function AuthProvider({ children }) {
         }
       }
 
-      const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-
-      console.log('Calendar API response status:', response.status);
-
-      if (response.status === 401) {
-        console.log('Token expired, attempting reauthorization');
-        await deleteDoc(doc(db, calendarTokensCollection, user.uid));
-        setCalendarToken(null);
-        accessToken = await authorizeCalendar();
-        if (!accessToken) {
-          console.log('Reauthorization failed, disabling calendar integration');
-          await updatePreferences({ calendarIntegration: false });
-          return;
-        }
-      }
-
+      const calendars = await fetchUserCalendars(accessToken);
+      
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const calendarResponse = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${today.toISOString()}&timeMax=${tomorrow.toISOString()}&singleEvents=true&orderBy=startTime`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Accept': 'application/json'
+      // Fetch events from all calendars
+      const eventsPromises = calendars.map(async (calendar) => {
+        const calendarResponse = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?timeMin=${today.toISOString()}&timeMax=${tomorrow.toISOString()}&singleEvents=true&orderBy=startTime`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': 'application/json'
+            }
           }
+        );
+
+        if (!calendarResponse.ok) {
+          throw new Error(`Failed to fetch events for calendar ${calendar.id}`);
         }
-      );
 
-      if (!calendarResponse.ok) {
-        throw new Error('Failed to fetch calendar events');
-      }
+        const data = await calendarResponse.json();
+        return data.items?.map(event => ({
+          ...event,
+          calendarId: calendar.id,
+          calendarSummary: calendar.summary,
+          backgroundColor: calendar.backgroundColor,
+          foregroundColor: calendar.foregroundColor
+        })) || [];
+      });
 
-      const data = await calendarResponse.json();
-      const events = data.items?.filter(event => event.status !== 'cancelled') || [];
-      setCalendarEvents(events);
+      const allEvents = await Promise.all(eventsPromises);
+      const mergedEvents = allEvents.flat().filter(event => event.status !== 'cancelled');
+      setCalendarEvents(mergedEvents);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
       if (error.code === 'auth/popup-blocked') {
@@ -225,6 +244,20 @@ export function AuthProvider({ children }) {
 
   const logout = () => signOut(auth);
 
+  const updateCalendarVisibility = async (calendarId, isVisible) => {
+    if (!user) return;
+    
+    try {
+      const newVisibility = { ...calendarVisibility, [calendarId]: isVisible };
+      await setDoc(doc(db, userCollection, user.uid), {
+        calendarVisibility: newVisibility
+      }, { merge: true });
+      setCalendarVisibility(newVisibility);
+    } catch (error) {
+      console.error('Error updating calendar visibility:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -236,6 +269,9 @@ export function AuthProvider({ children }) {
       calendarEvents,
       fetchCalendarEvents,
       calendarToken,
+      userCalendars,
+      calendarVisibility,
+      updateCalendarVisibility,
     }}>
       {!loading && children}
     </AuthContext.Provider>

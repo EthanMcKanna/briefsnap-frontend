@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/Card";
 import { Calendar, Clock, MapPin, Users, Link as LinkIcon } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const EventTime = ({ start, end }) => {
   const formatTime = (dateString) => {
@@ -34,9 +35,13 @@ const EventTime = ({ start, end }) => {
 };
 
 export default function CalendarEvents({ events }) {
-  const sortedEvents = events?.sort((a, b) => 
-    new Date(a.start.dateTime) - new Date(b.start.dateTime)
-  ) || [];
+  const { calendarVisibility } = useAuth();
+  
+  const sortedEvents = events
+    ?.filter(event => calendarVisibility[event.calendarId] !== false)
+    ?.sort((a, b) => 
+      new Date(a.start.dateTime || a.start.date) - new Date(b.start.dateTime || b.start.date)
+    ) || [];
 
   return (
     <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">
@@ -60,12 +65,18 @@ export default function CalendarEvents({ events }) {
               <div 
                 key={event.id} 
                 className="p-4 rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                style={{ borderLeft: `4px solid ${event.backgroundColor || '#4285f4'}` }}
               >
                 <div className="flex flex-col space-y-2">
                   <div className="flex items-start justify-between">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                      {event.summary}
-                    </h3>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                        {event.summary}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {event.calendarSummary}
+                      </p>
+                    </div>
                     {event.status === 'tentative' && (
                       <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                         Tentative
