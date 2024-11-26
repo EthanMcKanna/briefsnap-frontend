@@ -68,6 +68,9 @@ const SortableWidgetOrderItem = ({ id }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    touchAction: 'none',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
   };
 
   return (
@@ -76,7 +79,7 @@ const SortableWidgetOrderItem = ({ id }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-move"
+      className="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-move select-none"
     >
       <GripVertical className="w-4 h-4 text-gray-500 mr-2" />
       <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -98,13 +101,16 @@ const SortablePinnedTopic = ({ topic, onUnpin }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    touchAction: 'none',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg cursor-move"
+      className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg cursor-move select-none"
     >
       <div className="flex items-center" {...attributes} {...listeners}>
         <GripVertical className="w-4 h-4 text-gray-500 mr-2" />
