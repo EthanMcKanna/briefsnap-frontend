@@ -34,7 +34,7 @@ export default function FullArticle() {
   const [readingTime, setReadingTime] = useState(0);
   const [likingComments, setLikingComments] = useState({});
   const { getCachedComments, cacheComments, getCachedArticle, cacheArticle, getCachedArticleSummary, cacheArticleSummary } = useCache();
-  const [summaryType, setSummaryType] = useState('summary'); // or 'keyPoints'
+  const [summaryType, setSummaryType] = useState(null);
   const [summary, setSummary] = useState(null);
   const [keyPoints, setKeyPoints] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -222,7 +222,7 @@ export default function FullArticle() {
       }
 
     } catch (error) {
-      console.error('Error generating summary:', error);
+      console.error('Detailed error in fetchOrGenerateSummary:', error);
       setSummaryError('Failed to generate summary. Please try again.');
     } finally {
       setLoadingSummary(false);
@@ -236,13 +236,6 @@ export default function FullArticle() {
     }
     
     setSummaryType(type);
-    
-    if (type === 'summary' && summary) {
-      return;
-    }
-    if (type === 'keyPoints' && keyPoints) {
-      return;
-    }
     
     if (type === 'summary' && article.summary) {
       setSummary(article.summary);
