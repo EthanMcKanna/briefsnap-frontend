@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut, MessageSquare } from 'lucide-react';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -45,6 +45,14 @@ export default function UserMenu() {
             <Settings className="w-4 h-4 mr-2" />
             Settings
           </button>
+
+          <a
+            href="mailto:feedback@briefsnap.com"
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Send Feedback
+          </a>
 
           <button
             onClick={handleLogout}

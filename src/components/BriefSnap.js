@@ -116,6 +116,27 @@ const LoginPrompt = () => {
   );
 };
 
+const DEFAULT_WIDGET_ORDER = ['weather', 'calendar', 'market'];
+
+const WidgetComponent = ({ type, userPreferences, calendarEvents }) => {
+  switch (type) {
+    case 'weather':
+      return userPreferences?.showWeather && userPreferences?.location ? (
+        <Weather location={userPreferences.location} />
+      ) : null;
+    case 'calendar':
+      return userPreferences?.calendarIntegration ? (
+        <CalendarEvents events={calendarEvents} />
+      ) : null;
+    case 'market':
+      return userPreferences?.showMarketWidget ? (
+        <MarketWidget />
+      ) : null;
+    default:
+      return null;
+  }
+};
+
 export default function BriefSnap() {
   const { user, userPreferences, calendarEvents, fetchCalendarEvents } = useAuth();
   const [pinnedContent, setPinnedContent] = useState({});
@@ -145,6 +166,21 @@ export default function BriefSnap() {
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  };
+
+  const getEnabledWidgets = () => {
+    return (userPreferences?.widgetOrder || DEFAULT_WIDGET_ORDER).filter(type => {
+      switch (type) {
+        case 'weather':
+          return userPreferences?.showWeather && userPreferences?.location;
+        case 'calendar':
+          return userPreferences?.calendarIntegration;
+        case 'market':
+          return userPreferences?.showMarketWidget;
+        default:
+          return false;
+      }
+    });
   };
 
   useEffect(() => {
@@ -329,34 +365,33 @@ export default function BriefSnap() {
       <Header />
       <div className="flex flex-col items-center justify-center p-4 flex-grow">
         {user && (
-          <div className="w-full max-w-3xl mb-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {getTimeBasedGreeting()}, {getFirstName(user.displayName)}
-              </h1>
-              <span className="text-2xl" role="img" aria-label="wave">
-                {getTimeBasedGreeting() === 'Good evening' ? '🌙' : '👋'}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Here's your personalized briefing for today
-            </p>
-            {userPreferences?.showWeather && userPreferences?.location && (
-              <div className="mt-4">
-                <Weather location={userPreferences.location} />
+          <>
+            <div className="w-full max-w-3xl mb-6">
+              <div className="flex items-center space-x-2 mb-2">
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {getTimeBasedGreeting()}, {getFirstName(user.displayName)}
+                </h1>
+                <span className="text-2xl" role="img" aria-label="wave">
+                  {getTimeBasedGreeting() === 'Good evening' ? '🌙' : '👋'}
+                </span>
               </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Here's your personalized briefing for today
+              </p>
+            </div>
+
+            {getEnabledWidgets().length > 0 && (
+              getEnabledWidgets().map((widgetType) => (
+                <div key={widgetType} className="w-full max-w-3xl mb-8">
+                  <WidgetComponent
+                    type={widgetType}
+                    userPreferences={userPreferences}
+                    calendarEvents={calendarEvents}
+                  />
+                </div>
+              ))
             )}
-          </div>
-        )}
-
-        {user && userPreferences?.calendarIntegration && (
-          <CalendarEvents events={calendarEvents} />
-        )}
-
-        {user && userPreferences?.showMarketWidget && (
-          <div className="w-full max-w-3xl mb-8">
-            <MarketWidget />
-          </div>
+          </>
         )}
 
         <Card className="w-full max-w-3xl border-gray-200 dark:border-gray-800 dark:bg-gray-800 mb-8">
@@ -444,7 +479,7 @@ export default function BriefSnap() {
         {userPreferences?.pinnedTopics?.length > 0 && (
           <div className="flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-3xl space-y-8">
-              {userPreferences.pinnedTopics.map((topic) => {
+              {(userPreferences.pinnedTopics || []).map((topic) => {
                 const content = pinnedContent[topic];
                 if (!content) return null;
 

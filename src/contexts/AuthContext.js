@@ -116,13 +116,28 @@ export function AuthProvider({ children }) {
         }
       });
 
-      if (!response.ok) throw new Error('Failed to fetch calendars');
+      if (response.status === 401) {
+        await deleteDoc(doc(db, calendarTokensCollection, user.uid));
+        setCalendarToken(null);
+        const newToken = await authorizeCalendar();
+        if (newToken) {
+          return fetchUserCalendars(newToken);
+        }
+        throw new Error('Failed to refresh calendar authorization');
+      }
+
+      if (!response.ok) {
+        throw new Error(`Calendar API error: ${response.status}`);
+      }
 
       const data = await response.json();
       setUserCalendars(data.items || []);
       return data.items;
     } catch (error) {
       console.error('Error fetching calendars:', error);
+      if (error.message.includes('Failed to refresh')) {
+        await updatePreferences({ calendarIntegration: false });
+      }
       return [];
     }
   };
@@ -148,13 +163,15 @@ export function AuthProvider({ children }) {
         console.log('No token found, requesting authorization');
         accessToken = await authorizeCalendar();
         if (!accessToken) {
-          console.log('Failed to get new token');
-          return;
+          throw new Error('Failed to get calendar authorization');
         }
       }
 
       const calendars = await fetchUserCalendars(accessToken);
-      
+      if (!calendars.length) {
+        throw new Error('No calendars available');
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -191,7 +208,7 @@ export function AuthProvider({ children }) {
       setCalendarEvents(mergedEvents);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
-      if (error.code === 'auth/popup-blocked') {
+      if (error.message.includes('authorization') || error.code === 'auth/popup-blocked') {
         await updatePreferences({ calendarIntegration: false });
       }
       setCalendarEvents([]);
