@@ -5,7 +5,7 @@ import { db, commentsCollection } from '../firebase'
 import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
-import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, ChevronDown } from 'lucide-react'
+import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, ChevronDown, SplitIcon, ListIcon } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { useAuth } from '../contexts/AuthContext'
 import { useBookmarks } from '../contexts/BookmarkContext'
@@ -33,8 +33,12 @@ export default function FullArticle() {
   const [sortBy, setSortBy] = useState('likes');
   const [readingTime, setReadingTime] = useState(0);
   const [likingComments, setLikingComments] = useState({});
-  const { getCachedComments, cacheComments, getCachedArticle, cacheArticle } = useCache();
-
+  const { getCachedComments, cacheComments, getCachedArticle, cacheArticle, getCachedArticleSummary, cacheArticleSummary } = useCache();
+  const [summaryType, setSummaryType] = useState('summary'); // or 'keyPoints'
+  const [summary, setSummary] = useState(null);
+  const [keyPoints, setKeyPoints] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
 
   const processCitations = (text, citations) => {
     if (!citations || !text) return text;
@@ -164,6 +168,93 @@ export default function FullArticle() {
       loadComments();
     }
   }, [sortBy, loadComments, commentsLoaded]);
+
+  const fetchOrGenerateSummary = async (type) => {
+    if (!article) return;
+    
+    setLoadingSummary(true);
+    setSummaryError('');
+
+    try {
+      const cached = getCachedArticleSummary(article.docId, type);
+      if (cached) {
+        if (type === 'summary') {
+          setSummary(cached);
+        } else {
+          setKeyPoints(cached);
+        }
+        setLoadingSummary(false);
+        return;
+      }
+
+      if (type === 'summary' && article.summary) {
+        setSummary(article.summary);
+        cacheArticleSummary(article.docId, type, article.summary);
+        return;
+      }
+      if (type === 'keyPoints' && article.keyPoints) {
+        setKeyPoints(article.keyPoints);
+        cacheArticleSummary(article.docId, type, article.keyPoints);
+        return;
+      }
+
+      const response = await fetch('https://generatesummary-t56b56emaq-uc.a.run.app', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          articleId: article.docId,
+          type: type
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to generate summary');
+      }
+
+      if (type === 'summary') {
+        setSummary(result.summary);
+        cacheArticleSummary(article.docId, type, result.summary);
+      } else {
+        setKeyPoints(result.keyPoints);
+        cacheArticleSummary(article.docId, type, result.keyPoints);
+      }
+
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      setSummaryError('Failed to generate summary. Please try again.');
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  const handleGenerateClick = (type) => {
+    if (type === summaryType) {
+      setSummaryType(null);
+      return;
+    }
+    
+    setSummaryType(type);
+    
+    if (type === 'summary' && summary) {
+      return;
+    }
+    if (type === 'keyPoints' && keyPoints) {
+      return;
+    }
+    
+    if (type === 'summary' && article.summary) {
+      setSummary(article.summary);
+      return;
+    }
+    if (type === 'keyPoints' && article.keyPoints) {
+      setKeyPoints(article.keyPoints);
+      return;
+    }
+
+    fetchOrGenerateSummary(type);
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -385,6 +476,64 @@ export default function FullArticle() {
               <div className="text-center text-red-500">{error}</div>
             ) : (
               <>
+                <div className="flex gap-4 mb-8">
+                  <button
+                    onClick={() => handleGenerateClick('summary')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors
+                      ${summaryType === 'summary' && summary
+                        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300'
+                        : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-300'
+                      } ${loadingSummary && 'opacity-50 cursor-wait'}`}
+                    disabled={loadingSummary}
+                    title={summaryType === 'summary' && summary ? "Click to hide summary" : "Generate summary"}
+                  >
+                    <SplitIcon className="w-4 h-4" />
+                    <span>{summaryType === 'summary' && summary ? "Hide Summary" : "Generate Summary"}</span>
+                  </button>
+                  <button
+                    onClick={() => handleGenerateClick('keyPoints')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors
+                      ${summaryType === 'keyPoints' && keyPoints
+                        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300'
+                        : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-300'
+                      } ${loadingSummary && 'opacity-50 cursor-wait'}`}
+                    disabled={loadingSummary}
+                    title={summaryType === 'keyPoints' && keyPoints ? "Click to hide key points" : "Extract key points"}
+                  >
+                    <ListIcon className="w-4 h-4" />
+                    <span>{summaryType === 'keyPoints' && keyPoints ? "Hide Key Points" : "Extract Key Points"}</span>
+                  </button>
+                </div>
+
+                {summaryType && (loadingSummary || summaryError || summary || keyPoints) && (
+                  <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <h2 className="text-lg font-semibold mb-4 dark:text-gray-100">
+                      {summaryType === 'summary' ? 'Summary' : 'Key Points'}
+                    </h2>
+                    {loadingSummary ? (
+                      <div className="flex justify-center p-4">
+                        <Spinner size="md" />
+                      </div>
+                    ) : summaryError ? (
+                      <div className="text-red-500 dark:text-red-400 p-4">{summaryError}</div>
+                    ) : summaryType === 'summary' && summary ? (
+                      <div className="prose prose-gray dark:prose-invert">
+                        <p className="text-gray-800 dark:text-gray-200">{summary}</p>
+                      </div>
+                    ) : summaryType === 'keyPoints' && keyPoints ? (
+                      <div className="prose prose-gray dark:prose-invert">
+                        <ul className="list-disc pl-4 space-y-2">
+                          {keyPoints.map((point, index) => (
+                            <li key={index} className="text-gray-800 dark:text-gray-200">
+                              {point}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
                 <div className="prose prose-lg dark:prose-invert max-w-none select-text">
                   <ReactMarkdown
                     components={{
@@ -418,7 +567,7 @@ export default function FullArticle() {
                     {processedContent}
                   </ReactMarkdown>
                 </div>
-                
+
                 {article.citations && article.citations.length > 0 && (
                   <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold mb-4 dark:text-gray-200">Citations</h2>

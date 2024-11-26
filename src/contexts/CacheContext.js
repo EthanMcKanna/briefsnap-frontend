@@ -10,6 +10,7 @@ export function CacheProvider({ children }) {
   const [pinnedTopicsCache, setPinnedTopicsCache] = useState(new Map());
   const [weatherCache, setWeatherCache] = useState(new Map());
   const [calendarCache, setCalendarCache] = useState(null);
+  const [articleSummaryCache, setArticleSummaryCache] = useState(new Map());
 
   const cacheArticles = useCallback((articles, query = 'default') => {
     console.log(`💾 Caching articles (${query})`);
@@ -220,12 +221,40 @@ export function CacheProvider({ children }) {
     return data;
   };
 
+  const cacheArticleSummary = useCallback((articleId, type, content) => {
+    console.log(`💾 Caching ${type} for article ${articleId}`);
+    setArticleSummaryCache(prev => new Map(prev).set(`${articleId}_${type}`, {
+      data: content,
+      timestamp: Date.now()
+    }));
+  }, []);
+
+  const getCachedArticleSummary = useCallback((articleId, type) => {
+    const cached = articleSummaryCache.get(`${articleId}_${type}`);
+    if (!cached) {
+      console.log(`🔍 Cache miss: ${type} for article ${articleId}`);
+      return null;
+    }
+    if (Date.now() - cached.timestamp > CACHE_EXPIRY) {
+      console.log(`⌛ Cache expired: ${type} for article ${articleId}`);
+      setArticleSummaryCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(`${articleId}_${type}`);
+        return newCache;
+      });
+      return null;
+    }
+    console.log(`✅ Cache hit: ${type} for article ${articleId}`);
+    return cached.data;
+  }, [articleSummaryCache, CACHE_EXPIRY]);
+
   const clearCache = useCallback(() => {
     console.log('🧹 Clearing all caches');
     setArticlesCache(new Map());
     setSummaryCache(null);
     setCommentsCache(new Map());
     setWeatherCache(new Map());
+    setArticleSummaryCache(new Map());
   }, []);
 
   return (
@@ -246,6 +275,8 @@ export function CacheProvider({ children }) {
       getCachedCalendarEvents,
       cacheSitemapArticles,
       getCachedSitemapArticles,
+      cacheArticleSummary,
+      getCachedArticleSummary,
       clearCache
     }}>
       {children}
