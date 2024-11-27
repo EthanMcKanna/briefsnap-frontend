@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { GoogleIcon } from './IconComponents';
 
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
 
@@ -15,6 +17,14 @@ export function AuthForms({ onSuccess }) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const { loginWithGoogle, loginWithEmail, registerWithEmail, resetPassword } = useAuth();
+  const { theme } = useTheme();
+
+  const getEffectiveTheme = () => {
+    if (theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return theme;
+  };
 
   const validateForm = () => {
     if (!email.includes('@') || !email.includes('.')) {
@@ -153,7 +163,7 @@ export function AuthForms({ onSuccess }) {
           disabled={loading}
           className="w-full flex items-center justify-center px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
         >
-          <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
+          <GoogleIcon dark={getEffectiveTheme() === 'dark'} className="w-5 h-5 mr-2" />
           Continue with Google
         </button>
       </div>
