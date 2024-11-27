@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import { Helmet } from 'react-helmet-async'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/Card"
 import { ScrollArea } from "./ui/ScrollArea"
-import { Newspaper, Bookmark, BookmarkCheck, Calendar } from 'lucide-react'
+import { Newspaper, Bookmark, BookmarkCheck, Calendar, X } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, getDocs, where, Timestamp } from 'firebase/firestore'
@@ -17,8 +17,10 @@ import { useAuth } from '../contexts/AuthContext';
 import Weather from './Weather';
 import CalendarEvents from './CalendarEvents';
 import MarketWidget from './MarketWidget';
+import { AuthForms } from './AuthForms';
 
 const TOPICS = [
+  { value: 'ALL', label: 'All Topics' },
   { value: 'ALL', label: 'All Topics' },
   { value: 'TOP_NEWS', label: 'Top News' },
   { value: 'BUSINESS', label: 'Business' },
@@ -97,21 +99,36 @@ const formatRelativeTime = (timestamp) => {
 };
 
 const LoginPrompt = () => {
-  const { login } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   return (
     <div className="w-full max-w-3xl mx-auto mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
         Sign in to get more from BriefSnap
       </h3>
       <p className="text-gray-600 dark:text-gray-300 mb-4">
-        Create a free account to pin your favorite topics, bookmark articles for later, and customize your news experience.
+        Create a free account to pin your favorite topics, bookmark articles for later, and customize your home page with weather, calendar, and other customizable widgets.
       </p>
       <button
-        onClick={login}
+        onClick={() => setShowAuthModal(true)}
         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
       >
-        Sign in with Google
+        Get Started
       </button>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full relative">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <AuthForms onSuccess={() => setShowAuthModal(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
