@@ -1,6 +1,15 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth } from '../firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut, getAuth } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile
+} from 'firebase/auth';
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, userCollection, calendarTokensCollection } from '../firebase';
 
@@ -237,7 +246,7 @@ export function AuthProvider({ children }) {
     };
   }, [userPreferences?.calendarIntegration, calendarToken]);
 
-  const login = async () => {
+  const loginWithGoogle = async () => {
     try {
       const auth = getAuth();
       const provider = new GoogleAuthProvider();
@@ -255,6 +264,51 @@ export function AuthProvider({ children }) {
       return result;
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const loginWithEmail = async (email, password) => {
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error('Email login error:', error);
+      throw error;
+    }
+  };
+
+  const registerWithEmail = async (email, password, displayName) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Use the imported updateProfile function instead of the method
+      await updateProfile(result.user, { 
+        displayName,
+        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`
+      });
+      
+      // Create user profile in Firestore
+      await setDoc(doc(db, userCollection, result.user.uid), {
+        email: result.user.email,
+        name: displayName,
+        photoURL: result.user.photoURL,
+        preferences: userPreferences,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error('Password reset error:', error);
       throw error;
     }
   };
@@ -278,7 +332,10 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ 
       user, 
-      login, 
+      loginWithGoogle,
+      loginWithEmail,
+      registerWithEmail,
+      resetPassword,
       logout, 
       loading,
       userPreferences,

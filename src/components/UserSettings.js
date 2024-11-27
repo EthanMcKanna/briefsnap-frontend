@@ -134,7 +134,7 @@ const BetaTag = () => (
 );
 
 export default function UserSettings() {
-  const { user, userPreferences, updatePreferences, userCalendars, calendarVisibility, updateCalendarVisibility } = useAuth();
+  const { user, userPreferences, updatePreferences, userCalendars, calendarVisibility, updateCalendarVisibility, resetPassword } = useAuth();
   const { setTheme } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [newStock, setNewStock] = useState({ ticker: '', name: '' });
@@ -338,8 +338,27 @@ export default function UserSettings() {
                     <p className="text-gray-500 dark:text-gray-400">{user?.email}</p>
                   </div>
                 </div>
-              </div>
 
+                {/* Add Change Password Section for email/password users */}
+                {user?.providerData[0]?.providerId === 'password' && (
+                  <div className="mt-4">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await resetPassword(user.email);
+                          alert('Password reset email sent! Please check your inbox.');
+                        } catch (err) {
+                          alert('Error: ' + err.message);
+                        }
+                      }}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Change Password
+                    </button>
+                  </div>
+                )}
+              </div>
+              
               {/* General Settings Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">General Settings</h3>
