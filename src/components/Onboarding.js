@@ -75,7 +75,7 @@ export default function Onboarding() {
       component: ({ userPreferences }) => (
         <div className="flex justify-center">
           <img 
-            src="/logo512.png" 
+            src="/logo192.png" 
             alt="BriefSnap Logo" 
             className="w-32 h-32 animate-float"
           />
