@@ -18,20 +18,8 @@ import Weather from './Weather';
 import CalendarEvents from './CalendarEvents';
 import MarketWidget from './MarketWidget';
 import { AuthForms } from './AuthForms';
-
-const TOPICS = [
-  { value: 'ALL', label: 'All Topics' },
-  { value: 'ALL', label: 'All Topics' },
-  { value: 'TOP_NEWS', label: 'Top News' },
-  { value: 'BUSINESS', label: 'Business' },
-  { value: 'TECHNOLOGY', label: 'Technology' },
-  { value: 'SPORTS', label: 'Sports' },
-  { value: 'WORLD', label: 'World' },
-  { value: 'NATION', label: 'Nation' },
-  { value: 'ENTERTAINMENT', label: 'Entertainment' },
-  { value: 'SCIENCE', label: 'Science' },
-  { value: 'HEALTH', label: 'Health' },
-];
+import { useOnboarding } from '../contexts/OnboardingContext';
+import { TOPICS } from '../utils/constants';
 
 const TOPIC_COLORS = {
   TOP_NEWS: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
@@ -156,6 +144,14 @@ const WidgetComponent = ({ type, userPreferences, calendarEvents }) => {
 
 export default function BriefSnap() {
   const { user, userPreferences, calendarEvents, fetchCalendarEvents } = useAuth();
+  const { startOnboarding } = useOnboarding();
+  
+  useEffect(() => {
+    if (user && userPreferences && !userPreferences.onboardingCompleted) {
+      startOnboarding();
+    }
+  }, [user, userPreferences]);
+  
   const [pinnedContent, setPinnedContent] = useState({});
   const [summary, setSummary] = useState('')
   const [loading, setLoading] = useState(true)

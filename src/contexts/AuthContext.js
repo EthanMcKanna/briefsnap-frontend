@@ -56,7 +56,7 @@ export function AuthProvider({ children }) {
               email: user.email,
               name: user.displayName,
               photoURL: user.photoURL,
-              preferences: userPreferences,
+              preferences: { ...userPreferences, onboardingCompleted: false },
               createdAt: new Date()
             });
           }
@@ -73,15 +73,35 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updatePreferences = async (newPreferences) => {
-    if (!user) return;
+    if (!user) {
+      console.error('Cannot update preferences: No user logged in');
+      return;
+    }
+    
+    console.log('Updating preferences:', {
+      current: userPreferences,
+      new: newPreferences,
+      merged: { ...userPreferences, ...newPreferences }
+    });
     
     try {
-      await setDoc(doc(db, userCollection, user.uid), {
+      const userDocRef = doc(db, userCollection, user.uid);
+      await setDoc(userDocRef, {
         preferences: { ...userPreferences, ...newPreferences }
       }, { merge: true });
-      setUserPreferences(prev => ({ ...prev, ...newPreferences }));
+      
+      console.log('Preferences updated in Firestore successfully');
+      setUserPreferences(prev => {
+        const updated = { ...prev, ...newPreferences };
+        console.log('New preferences state:', updated);
+        return updated;
+      });
     } catch (error) {
-      console.error('Error updating preferences:', error);
+      console.error('Error updating preferences:', error, {
+        userId: user.uid,
+        preferences: newPreferences
+      });
+      throw error;
     }
   };
 

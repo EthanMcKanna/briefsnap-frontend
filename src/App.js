@@ -14,42 +14,47 @@ import { AuthProvider } from './contexts/AuthContext';
 import { HelmetProvider } from 'react-helmet-async';
 import { CacheProvider } from './contexts/CacheContext';
 import PrivateRoute from './components/PrivateRoute';
+import { OnboardingProvider } from './contexts/OnboardingContext';
+import Onboarding from './components/Onboarding';
 
 function App() {
   return (
     <HelmetProvider>
       <ThemeProvider>
         <AuthProvider>
-          <CacheProvider>
-            <BookmarkProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<BriefSnap />} />
-                  <Route path="/article/:slug" element={<FullArticle />} />
-                  <Route 
-                    path="/bookmarks" 
-                    element={
-                      <PrivateRoute>
-                        <BookmarksPage />
-                      </PrivateRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/settings" 
-                    element={
-                      <PrivateRoute>
-                        <UserSettings />
-                      </PrivateRoute>
-                    } 
-                  />
-                  <Route path="/articles" element={<ArticlesPage />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/terms-of-service" element={<TermsOfService />} />
-                  <Route path="/sitemap.xml" element={<SitemapXML />} />
-                </Routes>
-              </BrowserRouter>
-            </BookmarkProvider>
-          </CacheProvider>
+          <OnboardingProvider>
+            <CacheProvider>
+              <BookmarkProvider>
+                <BrowserRouter>
+                  <Onboarding />
+                  <Routes>
+                    <Route path="/" element={<BriefSnap />} />
+                    <Route path="/article/:slug" element={<FullArticle />} />
+                    <Route 
+                      path="/bookmarks" 
+                      element={
+                        <PrivateRoute>
+                          <BookmarksPage />
+                        </PrivateRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/settings" 
+                      element={
+                        <PrivateRoute>
+                          <UserSettings />
+                        </PrivateRoute>
+                      } 
+                    />
+                    <Route path="/articles" element={<ArticlesPage />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/sitemap.xml" element={<SitemapXML />} />
+                  </Routes>
+                </BrowserRouter>
+              </BookmarkProvider>
+            </CacheProvider>
+          </OnboardingProvider>
         </AuthProvider>
       </ThemeProvider>
     </HelmetProvider>
