@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { X, ArrowLeft, ArrowRight, Check, Sun, Moon, Computer, MapPin, Calendar, LayoutDashboard, Tag, Newspaper, BookmarkCheck } from 'lucide-react';
@@ -8,6 +8,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { debounce } from 'lodash';
 
 const BetaTag = () => (
   <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
@@ -39,7 +40,7 @@ const SortablePinnedTopic = ({ topic, onUnpin }) => {
       className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between"
     >
       <div className="flex items-center" {...attributes} {...listeners}>
-        <Tag className="w-4 h-4 mr-2" />
+        <Tag className="w-4 h-4 mr-2 text-blue-700 dark:text-blue-300" />
         <span className="text-sm text-blue-700 dark:text-blue-300">{topic.label}</span>
       </div>
       <button
@@ -308,6 +309,14 @@ export default function Onboarding() {
           userPreferences.widgetOrder || ['weather', 'calendar', 'market']
         );
 
+        const [locationInput, setLocationInput] = useState(userPreferences.location || '');
+
+        // Add the debounced update function
+        const debouncedLocationUpdate = useCallback(
+          debounce((value) => handlePreferenceUpdate({ location: value }), 500),
+          []
+        );
+
         // Sort enabled widgets based on the localWidgetOrder
         const sortedEnabledWidgets = [...enabledWidgets].sort((a, b) => {
           const aIndex = localWidgetOrder.indexOf(a.key);
@@ -352,6 +361,47 @@ export default function Onboarding() {
                   </div>
                 </button>
               ))}
+              {userPreferences.showWeather && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Set your location for weather updates:
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Enter city name"
+                      value={locationInput}
+                      onChange={(e) => {
+                        setLocationInput(e.target.value);
+                        debouncedLocationUpdate(e.target.value);
+                      }}
+                      className="flex-1 appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (navigator.geolocation) {
+                          try {
+                            const position = await new Promise((resolve, reject) => {
+                              navigator.geolocation.getCurrentPosition(resolve, reject);
+                            });
+                            
+                            const response = await fetch(
+                              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+                            );
+                            const data = await response.json();
+                            handlePreferenceUpdate({ location: data.address.city || data.address.town });
+                          } catch (error) {
+                            console.error('Error getting location:', error);
+                          }
+                        }
+                      }}
+                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                    >
+                      <MapPin className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {enabledWidgets.length > 1 && (
