@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, userCollection, calendarTokensCollection } from '../firebase';
+import { useTheme } from './ThemeContext';
 
 const AuthContext = createContext();
 
@@ -28,6 +29,7 @@ export function AuthProvider({ children }) {
   const [calendarToken, setCalendarToken] = useState(null);
   const [userCalendars, setUserCalendars] = useState([]);
   const [calendarVisibility, setCalendarVisibility] = useState({});
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -40,6 +42,9 @@ export function AuthProvider({ children }) {
           if (userDoc.exists()) {
             const prefs = userDoc.data().preferences || {};
             setUserPreferences(prefs);
+            if (prefs.theme) {
+              setTheme(prefs.theme);
+            }
             console.log('Calendar integration setting:', prefs.calendarIntegration);
             
             const tokenDoc = await getDoc(doc(db, calendarTokensCollection, user.uid));

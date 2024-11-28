@@ -33,12 +33,13 @@ export function OnboardingProvider({ children }) {
       return;
     }
     
+    setIsOnboarding(false);
+    setCurrentStep(0);
+    
     setIsUpdating(true);
     try {
       await updatePreferences({ onboardingCompleted: true });
       console.log('Onboarding preferences saved successfully');
-      setIsOnboarding(false);
-      setCurrentStep(0);
     } catch (error) {
       console.error('Error completing onboarding:', error);
     } finally {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { useAuth } from '../contexts/AuthContext';
-import { X, ArrowLeft, ArrowRight, Check, Sun, Moon, Computer, MapPin, Calendar, LayoutDashboard, Tag } from 'lucide-react';
+import { X, ArrowLeft, ArrowRight, Check, Sun, Moon, Computer, MapPin, Calendar, LayoutDashboard, Tag, Newspaper, BookmarkCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TOPICS } from '../utils/constants';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -59,11 +59,14 @@ const SortableWidgetOrderItem = ({ widget }) => {
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: widget.key });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 50 : 'auto',
+    position: isDragging ? 'relative' : 'static',
     touchAction: 'none',
     userSelect: 'none',
     WebkitUserSelect: 'none',
@@ -77,7 +80,8 @@ const SortableWidgetOrderItem = ({ widget }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className={`w-full p-4 rounded-lg border transition-all text-left flex items-start space-x-3 cursor-move
+      className={`w-full p-4 rounded-lg border transition-colors duration-200 text-left flex items-start space-x-3 cursor-move
+        ${isDragging ? 'shadow-lg scale-[1.02] bg-white dark:bg-gray-800' : ''}
         ${widget.enabled
           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white'
           : 'border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white'
@@ -164,30 +168,52 @@ export default function Onboarding() {
       console.log('Update in progress, skipping button action');
       return;
     }
+    // Remove the artificial delay
     await action();
   };
 
   const steps = [
     {
       title: "Welcome to BriefSnap! 👋",
-      description: "Let's personalize your news experience in just a few steps.",
+      description: "Your AI-powered news companion that keeps you informed with concise, personalized news summaries.",
       component: ({ userPreferences }) => (
-        <div className="flex justify-center">
-          <img 
-            src="/logo192.png" 
-            alt="BriefSnap Logo" 
-            className="w-32 h-32 animate-float"
-          />
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <Newspaper className="w-32 h-32 text-black dark:text-white animate-float" />
+          </div>
+          <div className="space-y-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">AI-Powered Summaries</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Get quick, accurate summaries of the day's most important news</p>
+              </div>
+              <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <h3 className="font-medium text-green-900 dark:text-green-100 mb-2">Personalized Feed</h3>
+                <p className="text-sm text-green-700 dark:text-green-300">Customize your news feed with topics that matter to you</p>
+              </div>
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                <h3 className="font-medium text-purple-900 dark:text-purple-100 mb-2">Smart Widgets</h3>
+                <p className="text-sm text-purple-700 dark:text-purple-300">Add useful widgets like weather, calendar, and market updates</p>
+              </div>
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+                <h3 className="font-medium text-orange-900 dark:text-orange-100 mb-2">Save for Later</h3>
+                <p className="text-sm text-orange-700 dark:text-orange-300">Bookmark articles and access them anytime</p>
+              </div>
+            </div>
+          </div>
         </div>
       )
     },
     {
-      title: "Pick Your Topics",
-      description: "Choose up to 3 topics to pin to your home page.",
+      title: "Customize Your News Feed",
+      description: "Pin up to 3 topics to your home page for quick access to news that matters most to you.",
       component: ({ userPreferences, updatePreferences }) => (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            {TOPICS.filter(topic => !(userPreferences.pinnedTopics || []).includes(topic.value)).map(topic => (
+            {TOPICS.filter(topic => 
+              topic.value !== 'TOP_NEWS' &&
+              !(userPreferences.pinnedTopics || []).includes(topic.value)
+            ).map(topic => (
               <button
                 key={topic.value}
                 onClick={() => handleTopicToggle(topic.value)}
@@ -247,8 +273,8 @@ export default function Onboarding() {
       )
     },
     {
-      title: "Enable Widgets",
-      description: "Add useful widgets to your dashboard.",
+      title: "Enhance Your Dashboard",
+      description: "Add useful widgets to make BriefSnap your personalized news hub.",
       component: ({ userPreferences }) => {
         const widgets = [
           { 
@@ -278,6 +304,16 @@ export default function Onboarding() {
         ];
 
         const enabledWidgets = widgets.filter(w => w.enabled);
+        const [localWidgetOrder, setLocalWidgetOrder] = useState(
+          userPreferences.widgetOrder || ['weather', 'calendar', 'market']
+        );
+
+        // Sort enabled widgets based on the localWidgetOrder
+        const sortedEnabledWidgets = [...enabledWidgets].sort((a, b) => {
+          const aIndex = localWidgetOrder.indexOf(a.key);
+          const bIndex = localWidgetOrder.indexOf(b.key);
+          return aIndex - bIndex;
+        });
 
         return (
           <div className="space-y-6">
@@ -326,23 +362,29 @@ export default function Onboarding() {
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
+                  onDragStart={() => {
+                    if (window.navigator.vibrate) {
+                      window.navigator.vibrate(50);
+                    }
+                  }}
+                  modifiers={[]} // Remove any restrictive modifiers
                   onDragEnd={({ active, over }) => {
                     if (!over || active.id === over.id) return;
                     
-                    const currentOrder = userPreferences.widgetOrder || ['weather', 'calendar', 'market'];
-                    const oldIndex = currentOrder.indexOf(active.id);
-                    const newIndex = currentOrder.indexOf(over.id);
+                    const oldIndex = localWidgetOrder.indexOf(active.id);
+                    const newIndex = localWidgetOrder.indexOf(over.id);
                     
-                    const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
+                    const newOrder = arrayMove(localWidgetOrder, oldIndex, newIndex);
+                    setLocalWidgetOrder(newOrder);
                     handlePreferenceUpdate({ widgetOrder: newOrder });
                   }}
                 >
                   <SortableContext
-                    items={enabledWidgets.map(w => w.key)}
+                    items={sortedEnabledWidgets.map(w => w.key)}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-2">
-                      {enabledWidgets.map(widget => (
+                      {sortedEnabledWidgets.map(widget => (
                         <SortableWidgetOrderItem
                           key={widget.key}
                           widget={widget}
@@ -358,7 +400,44 @@ export default function Onboarding() {
       }
     },
     {
-      title: "All Set!",
+      title: "Making the Most of BriefSnap",
+      description: "Here are some tips to get the best experience.",
+      component: () => (
+        <div className="space-y-6">
+          <div className="grid gap-4">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center">
+                <Newspaper className="w-4 h-4 mr-2" />
+                Daily Summaries
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Check your home page for AI-generated summaries of the day's most important news, updated throughout the day.
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center">
+                <Tag className="w-4 h-4 mr-2" />
+                Topic Deep Dives
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Filter by topic from the articles page to see a focused feed of news and summaries for that category.
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center">
+                <BookmarkCheck className="w-4 h-4 mr-2" />
+                Bookmarks
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Save articles to read later by clicking the bookmark icon. Access them anytime from the bookmark page.
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "You're All Set! 🎉",
       description: "Your personalized news experience awaits.",
       component: () => (
         <div className="text-center space-y-4">

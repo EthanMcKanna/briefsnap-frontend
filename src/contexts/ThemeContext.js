@@ -38,12 +38,17 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
-  // Sync with user preferences when they change
   useEffect(() => {
     if (userPreferences?.theme) {
       setTheme(userPreferences.theme);
     }
   }, [userPreferences?.theme]);
+
+  useEffect(() => {
+    if (userPreferences?.theme) {
+      setTheme(userPreferences.theme);
+    }
+  }, [userPreferences]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
