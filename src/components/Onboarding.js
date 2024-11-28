@@ -180,10 +180,10 @@ export default function Onboarding() {
       component: ({ userPreferences }) => (
         <div className="space-y-6">
           <div className="flex justify-center">
-            <Newspaper className="w-32 h-32 text-black dark:text-white animate-float" />
+            <Newspaper className="w-24 h-24 sm:w-32 sm:h-32 text-black dark:text-white animate-float" />
           </div>
           <div className="space-y-4 text-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                 <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">AI-Powered Summaries</h3>
                 <p className="text-sm text-blue-700 dark:text-blue-300">Get quick, accurate summaries of the day's most important news</p>
@@ -210,7 +210,7 @@ export default function Onboarding() {
       description: "Pin up to 3 topics to your home page for quick access to news that matters most to you.",
       component: ({ userPreferences, updatePreferences }) => (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TOPICS.filter(topic => 
               topic.value !== 'TOP_NEWS' &&
               !(userPreferences.pinnedTopics || []).includes(topic.value)
@@ -503,49 +503,51 @@ export default function Onboarding() {
   const CurrentStepComponent = steps[currentStep].component;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 sm:p-4">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 relative"
+        className="bg-white dark:bg-gray-800 rounded-lg w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-md sm:w-full mx-auto overflow-y-auto"
       >
-        <button
-          onClick={handleButtonClick(completeOnboarding)}
-          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b dark:border-gray-700">
+          <button
+            onClick={handleButtonClick(completeOnboarding)}
+            className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            {steps.map((_, index) => (
-              <div
-                key={index}
-                className={`h-1 w-16 mx-1 rounded ${
-                  index <= currentStep 
-                    ? 'bg-blue-600' 
-                    : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              />
-            ))}
+          <div className="mb-4">
+            <div className="flex justify-center mb-4">
+              {steps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1 w-12 sm:w-16 mx-1 rounded ${
+                    index <= currentStep 
+                      ? 'bg-blue-600' 
+                      : 'bg-gray-200 dark:bg-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2 dark:text-white">
+              {steps[currentStep].title}
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              {steps[currentStep].description}
+            </p>
           </div>
-          <h2 className="text-2xl font-bold mb-2 dark:text-white">
-            {steps[currentStep].title}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            {steps[currentStep].description}
-          </p>
         </div>
 
-        <div className="mb-8">
+        <div className="p-4 sm:p-6">
           <CurrentStepComponent 
             userPreferences={userPreferences}
             updatePreferences={updatePreferences}
           />
         </div>
 
-        <div className="flex justify-between">
+        <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-t dark:border-gray-700 flex justify-between">
           <button
             onClick={handleButtonClick(previousStep)}
             className={`flex items-center ${
