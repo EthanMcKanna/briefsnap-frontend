@@ -11,6 +11,7 @@ export function CacheProvider({ children }) {
   const [weatherCache, setWeatherCache] = useState(new Map());
   const [calendarCache, setCalendarCache] = useState(null);
   const [articleSummaryCache, setArticleSummaryCache] = useState(new Map());
+  const [viewCountCache, setViewCountCache] = useState(new Map());
 
   const cacheArticles = useCallback((articles, query = 'default') => {
     console.log(`💾 Caching articles (${query})`);
@@ -248,6 +249,33 @@ export function CacheProvider({ children }) {
     return cached.data;
   }, [articleSummaryCache, CACHE_EXPIRY]);
 
+  const cacheViewCount = useCallback((articleId, count) => {
+    console.log(`💾 Caching view count for article ${articleId}: ${count}`);
+    setViewCountCache(prev => new Map(prev).set(articleId, {
+      data: count,
+      timestamp: Date.now()
+    }));
+  }, []);
+
+  const getCachedViewCount = useCallback((articleId) => {
+    const cached = viewCountCache.get(articleId);
+    if (!cached) {
+      console.log(`🔍 Cache miss: view count for article ${articleId}`);
+      return null;
+    }
+    if (Date.now() - cached.timestamp > CACHE_EXPIRY) {
+      console.log(`⌛ Cache expired: view count for article ${articleId}`);
+      setViewCountCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(articleId);
+        return newCache;
+      });
+      return null;
+    }
+    console.log(`✅ Cache hit: view count for article ${articleId}`);
+    return cached.data;
+  }, [viewCountCache, CACHE_EXPIRY]);
+
   const clearCache = useCallback(() => {
     console.log('🧹 Clearing all caches');
     setArticlesCache(new Map());
@@ -255,6 +283,7 @@ export function CacheProvider({ children }) {
     setCommentsCache(new Map());
     setWeatherCache(new Map());
     setArticleSummaryCache(new Map());
+    setViewCountCache(new Map());
   }, []);
 
   return (
@@ -277,6 +306,8 @@ export function CacheProvider({ children }) {
       getCachedSitemapArticles,
       cacheArticleSummary,
       getCachedArticleSummary,
+      cacheViewCount,
+      getCachedViewCount,
       clearCache
     }}>
       {children}

@@ -7,6 +7,7 @@ import ArticlesPage from './components/ArticlesPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import SitemapXML from './components/SitemapXML';
+import ReadingHistory from './components/ReadingHistory';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BookmarkProvider } from './contexts/BookmarkContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -50,6 +51,14 @@ function App() {
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="/sitemap.xml" element={<SitemapXML />} />
+                    <Route 
+                      path="/history" 
+                      element={
+                        <PrivateRoute>
+                          <ReadingHistory />
+                        </PrivateRoute>
+                      } 
+                    />
                   </Routes>
                 </BrowserRouter>
               </BookmarkProvider>

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { db, commentsCollection } from '../firebase'
-import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc } from 'firebase/firestore'
+import { db, commentsCollection, readingHistoryCollection } from '../firebase'
+import { collection, query, orderBy, getDocs, where, deleteDoc, doc, setDoc, getDoc, increment } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card"
 import Header from './Header'
 import { Share2, ArrowLeft, Trash2, ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, ChevronDown, SplitIcon, ListIcon } from 'lucide-react'
@@ -12,6 +12,13 @@ import { useBookmarks } from '../contexts/BookmarkContext'
 import Footer from './Footer';
 import { Helmet } from 'react-helmet-async';
 import { useCache } from '../contexts/CacheContext';
+
+function formatViewCount(count) {
+  if (!count) return '0 views';
+  if (count < 1000) return `${count} views`;
+  if (count < 1000000) return `${Math.round(count/1000)}K views`;
+  return `${Math.round(count/1000000)}M views`;
+}
 
 export default function FullArticle() {
   const { slug } = useParams()
@@ -138,10 +145,32 @@ export default function FullArticle() {
           setArticle(articleData);
           cacheArticle(slug, articleData);
           
+          // Increment view count
+          await setDoc(doc(db, 'articles', articleDoc.id), {
+            viewCount: increment(1)
+          }, { merge: true });
+
           if (articleData.full_article) {
             const time = calculateReadingTime(articleData.full_article);
             setReadingTime(time);
           }
+
+          if (user && articleData) {
+            const historyRef = doc(db, readingHistoryCollection, `${user.uid}_${articleData.id}`);
+            const historySnap = await getDoc(historyRef);
+            
+            await setDoc(historyRef, {
+              userId: user.uid,
+              articleId: articleData.id,
+              title: articleData.title,
+              description: articleData.description,
+              topic: articleData.topic,
+              slug: articleData.slug,
+              ...(!historySnap.exists() && { timestamp: new Date() }),
+              lastRead: new Date()
+            }, { merge: true });
+          }
+
         } else {
           setError('Article not found. Please check the URL and try again.');
         }
@@ -154,7 +183,7 @@ export default function FullArticle() {
     };
 
     fetchArticle();
-  }, [slug, getCachedArticle, cacheArticle]);
+  }, [slug, getCachedArticle, cacheArticle, user]);
 
   useEffect(() => {
     if (showComments && !commentsLoaded) {
@@ -456,6 +485,8 @@ export default function FullArticle() {
                   </time>
                   <span>•</span>
                   <span>{readingTime} min read</span>
+                  <span>•</span>
+                  <span>{formatViewCount(article.viewCount)}</span>
                 </div>
               </>
             )}

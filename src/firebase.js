@@ -19,6 +19,7 @@ const userCollection = 'users';
 const bookmarksCollection = 'bookmarks';
 const commentsCollection = 'comments';
 const calendarTokensCollection = 'calendar_tokens';
+const readingHistoryCollection = 'reading_history';
 
 export { 
   db, 
@@ -26,5 +27,6 @@ export {
   userCollection, 
   bookmarksCollection, 
   commentsCollection, 
-  calendarTokensCollection 
+  calendarTokensCollection,
+  readingHistoryCollection
 }

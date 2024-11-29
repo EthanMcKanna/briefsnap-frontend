@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Settings, LogOut, MessageSquare } from 'lucide-react';
+import { Settings, LogOut, MessageSquare, History } from 'lucide-react';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -44,6 +44,17 @@ export default function UserMenu() {
           >
             <Settings className="w-4 h-4 mr-2" />
             Settings
+          </button>
+
+          <button
+            onClick={() => {
+              navigate('/history');
+              setIsOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+          >
+            <History className="w-4 h-4 mr-2" />
+            Reading History
           </button>
 
           <a
