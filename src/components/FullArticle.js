@@ -145,11 +145,6 @@ export default function FullArticle() {
           const articleData = { ...articleDoc.data(), docId: articleDoc.id };
           setArticle(articleData);
           cacheArticle(slug, articleData);
-          
-          // Increment view count
-          await setDoc(doc(db, 'articles', articleDoc.id), {
-            viewCount: increment(1)
-          }, { merge: true });
 
           if (articleData.full_article) {
             const time = calculateReadingTime(articleData.full_article);
@@ -157,19 +152,31 @@ export default function FullArticle() {
           }
 
           if (user && articleData) {
-            const historyRef = doc(db, readingHistoryCollection, `${user.uid}_${articleData.id}`);
-            const historySnap = await getDoc(historyRef);
-            
-            await setDoc(historyRef, {
-              userId: user.uid,
-              articleId: articleData.id,
-              title: articleData.title,
-              description: articleData.description,
-              topic: articleData.topic,
-              slug: articleData.slug,
-              ...(!historySnap.exists() && { timestamp: new Date() }),
-              lastRead: new Date()
+            try {
+              const historyRef = doc(db, readingHistoryCollection, `${user.uid}_${articleData.id}`);
+              const historySnap = await getDoc(historyRef);
+              
+              await setDoc(historyRef, {
+                userId: user.uid,
+                articleId: articleData.id,
+                title: articleData.title,
+                description: articleData.description,
+                topic: articleData.topic,
+                slug: articleData.slug,
+                ...(!historySnap.exists() && { timestamp: new Date() }),
+                lastRead: new Date()
+              }, { merge: true });
+            } catch (error) {
+              console.error("Error updating reading history:", error);
+            }
+          }
+
+          try {
+            await setDoc(doc(db, 'articles', articleDoc.id), {
+              viewCount: increment(1)
             }, { merge: true });
+          } catch (error) {
+            console.error("Error updating view count:", error);
           }
 
         } else {
