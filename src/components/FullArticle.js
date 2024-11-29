@@ -12,6 +12,7 @@ import { useBookmarks } from '../contexts/BookmarkContext'
 import Footer from './Footer';
 import { Helmet } from 'react-helmet-async';
 import { useCache } from '../contexts/CacheContext';
+import RelatedArticles from './RelatedArticles';
 
 function formatViewCount(count) {
   if (!count) return '0 views';
@@ -430,359 +431,366 @@ export default function FullArticle() {
       )}
       <Header />
       <div className="py-8 px-4 flex-grow">
-        <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </button>
-          <div className="flex items-center space-x-4">
-            {article && (
-              <button
-                onClick={() => toggleBookmark(article)}
-                className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                {bookmarks.some(b => b.id === article.id) ? (
-                  <BookmarkCheck className="w-4 h-4 mr-2" />
-                ) : (
-                  <Bookmark className="w-4 h-4 mr-2" />
-                )}
-                {bookmarks.some(b => b.id === article.id) ? 'Bookmarked' : 'Bookmark'}
-              </button>
-            )}
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-4 flex justify-between items-center">
             <button
-              onClick={handleShare}
+              onClick={() => navigate(-1)}
               className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </button>
+            <div className="flex items-center space-x-4">
+              {article && (
+                <button
+                  onClick={() => toggleBookmark(article)}
+                  className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  {bookmarks.some(b => b.id === article.id) ? (
+                    <BookmarkCheck className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Bookmark className="w-4 h-4 mr-2" />
+                  )}
+                  {bookmarks.some(b => b.id === article.id) ? 'Bookmarked' : 'Bookmark'}
+                </button>
+              )}
+              <button
+                onClick={handleShare}
+                className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </button>
+            </div>
           </div>
-        </div>
-        <Card className="w-full max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700">
-          <CardHeader>
-            {loading ? (
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
-            ) : error ? (
-              <div className="text-center text-red-500 dark:text-red-400">{error}</div>
-            ) : (
-              <>
-                <CardTitle className="text-3xl font-bold dark:text-white">
-                  {article.title}
-                </CardTitle>
-                <div className="flex items-center space-x-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
-                  <time dateTime={article.timestamp?.toDate().toISOString()}>
-                    {article.timestamp?.toDate().toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    })}
-                  </time>
-                  <span>•</span>
-                  <span>{readingTime} min read</span>
-                  <span>•</span>
-                  <span>{formatViewCount(article.viewCount)}</span>
-                </div>
-              </>
-            )}
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center p-8">
-                <Spinner size="lg" />
-              </div>
-            ) : error ? (
-              <div className="text-center text-red-500">{error}</div>
-            ) : (
-              <>
-                <div className="flex gap-4 mb-8">
-                  <button
-                    onClick={() => handleGenerateClick('summary')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors
-                      ${summaryType === 'summary' && summary
-                        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300'
-                        : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-300'
-                      } ${loadingSummary && 'opacity-50 cursor-wait'}`}
-                    disabled={loadingSummary}
-                    title={summaryType === 'summary' && summary ? "Click to hide summary" : "Generate summary"}
-                  >
-                    <SplitIcon className="w-4 h-4" />
-                    <span>{summaryType === 'summary' && summary ? "Hide Summary" : "Generate Summary"}</span>
-                  </button>
-                  <button
-                    onClick={() => handleGenerateClick('keyPoints')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors
-                      ${summaryType === 'keyPoints' && keyPoints
-                        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300'
-                        : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-300'
-                      } ${loadingSummary && 'opacity-50 cursor-wait'}`}
-                    disabled={loadingSummary}
-                    title={summaryType === 'keyPoints' && keyPoints ? "Click to hide key points" : "Extract key points"}
-                  >
-                    <ListIcon className="w-4 h-4" />
-                    <span>{summaryType === 'keyPoints' && keyPoints ? "Hide Key Points" : "Extract Key Points"}</span>
-                  </button>
-                </div>
-
-                {summaryType && (loadingSummary || summaryError || summary || keyPoints) && (
-                  <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <h2 className="text-lg font-semibold mb-4 dark:text-gray-100">
-                      {summaryType === 'summary' ? 'Summary' : 'Key Points'}
-                    </h2>
-                    {loadingSummary ? (
-                      <div className="flex justify-center p-4">
-                        <Spinner size="md" />
-                      </div>
-                    ) : summaryError ? (
-                      <div className="text-red-500 dark:text-red-400 p-4">{summaryError}</div>
-                    ) : summaryType === 'summary' && summary ? (
-                      <div className="prose prose-gray dark:prose-invert">
-                        <p className="text-gray-800 dark:text-gray-200">{summary}</p>
-                      </div>
-                    ) : summaryType === 'keyPoints' && keyPoints ? (
-                      <div className="prose prose-gray dark:prose-invert">
-                        <ul className="list-disc pl-4 space-y-2">
-                          {keyPoints.map((point, index) => (
-                            <li key={index} className="text-gray-800 dark:text-gray-200">
-                              {point}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
+          <div className="space-y-8">
+            <Card className="w-full dark:bg-gray-800 dark:border-gray-700">
+              <CardHeader>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+                ) : error ? (
+                  <div className="text-center text-red-500 dark:text-red-400">{error}</div>
+                ) : (
+                  <>
+                    <CardTitle className="text-3xl font-bold dark:text-white">
+                      {article.title}
+                    </CardTitle>
+                    <div className="flex items-center space-x-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
+                      <time dateTime={article.timestamp?.toDate().toISOString()}>
+                        {article.timestamp?.toDate().toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </time>
+                      <span>•</span>
+                      <span>{readingTime} min read</span>
+                      <span>•</span>
+                      <span>{formatViewCount(article.viewCount)}</span>
+                    </div>
+                  </>
                 )}
-
-                <div className="prose prose-lg dark:prose-invert max-w-none select-text">
-                  <ReactMarkdown
-                    components={{
-                      p: ({children}) => (
-                        <p className="mb-4 leading-relaxed dark:text-gray-300 select-text">
-                          {children}
-                        </p>
-                      ),
-                      h1: ({children}) => (
-                        <h1 className="text-2xl font-bold my-4 dark:text-gray-100 select-text">
-                          {children}
-                        </h1>
-                      ),
-                      h2: ({children}) => (
-                        <h2 className="text-xl font-bold my-3 dark:text-gray-200 select-text">
-                          {children}
-                        </h2>
-                      ),
-                      a: ({href, children}) => (
-                        <a 
-                          href={href}
-                          className="text-blue-600 hover:underline dark:text-blue-400 select-text"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {children}
-                        </a>
-                      )
-                    }}
-                  >
-                    {processedContent}
-                  </ReactMarkdown>
-                </div>
-
-                {article.citations && article.citations.length > 0 && (
-                  <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-semibold mb-4 dark:text-gray-200">Citations</h2>
-                    <ol className="list-decimal list-inside space-y-2">
-                      {article.citations.map((citation, index) => (
-                        <li key={index} className="text-gray-600 dark:text-gray-400">
-                          <a
-                            href={citation}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline break-all dark:text-blue-400"
-                          >
-                            {citation}
-                          </a>
-                        </li>
-                      ))}
-                    </ol>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center p-8">
+                    <Spinner size="lg" />
                   </div>
-                )}
-                {user && (
-                  <div className="mt-8 border-t pt-8 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-semibold dark:text-gray-100">Comments</h2>
+                ) : error ? (
+                  <div className="text-center text-red-500">{error}</div>
+                ) : (
+                  <>
+                    <div className="flex gap-4 mb-8">
                       <button
-                        onClick={() => setShowComments(!showComments)}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200
-                          ${showComments 
-                            ? 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100' 
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                          } hover:bg-gray-200 dark:hover:bg-gray-600`}
+                        onClick={() => handleGenerateClick('summary')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors
+                          ${summaryType === 'summary' && summary
+                            ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300'
+                            : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-300'
+                          } ${loadingSummary && 'opacity-50 cursor-wait'}`}
+                        disabled={loadingSummary}
+                        title={summaryType === 'summary' && summary ? "Click to hide summary" : "Generate summary"}
                       >
-                        <MessageCircle className="w-5 h-5" />
-                        <span>{showComments ? 'Hide Comments' : 'Show Comments'}</span>
-                        {!showComments && comments.length > 0 && (
-                          <span className="ml-2 px-2 py-0.5 bg-blue-500 dark:bg-blue-600 text-white text-sm rounded-full">
-                            {comments.length}
-                          </span>
-                        )}
+                        <SplitIcon className="w-4 h-4" />
+                        <span>{summaryType === 'summary' && summary ? "Hide Summary" : "Generate Summary"}</span>
+                      </button>
+                      <button
+                        onClick={() => handleGenerateClick('keyPoints')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors
+                          ${summaryType === 'keyPoints' && keyPoints
+                            ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300'
+                            : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-300'
+                          } ${loadingSummary && 'opacity-50 cursor-wait'}`}
+                        disabled={loadingSummary}
+                        title={summaryType === 'keyPoints' && keyPoints ? "Click to hide key points" : "Extract key points"}
+                      >
+                        <ListIcon className="w-4 h-4" />
+                        <span>{summaryType === 'keyPoints' && keyPoints ? "Hide Key Points" : "Extract Key Points"}</span>
                       </button>
                     </div>
 
-                    {showComments && (
-                      <>
-                        <div className="flex justify-between items-center mb-6">
-                          <div className="flex items-center space-x-4">
-                            <h2 className="text-xl font-semibold dark:text-gray-100">
-                              Comments {comments.length > 0 && `(${comments.length})`}
-                            </h2>
-                            <div className="relative">
-                              <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none bg-white dark:bg-gray-700 border border-gray-200 
-                                  dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 
-                                  dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                <option value="likes">Most Liked</option>
-                                <option value="newest">Newest</option>
-                              </select>
-                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 
-                                text-gray-500 pointer-events-none" />
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <form onSubmit={addComment} className="mb-8">
-                          <div className="relative">
-                            <textarea
-                              value={newComment}
-                              onChange={(e) => {
-                                setNewComment(e.target.value);
-                                setModerationError('');
-                              }}
-                              className="w-full p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 
-                                dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                dark:focus:ring-blue-400 pr-24"
-                              placeholder="What are your thoughts?"
-                              rows="3"
-                              disabled={isSubmitting}
-                            />
-                            <button 
-                              type="submit"
-                              className="absolute bottom-3 right-3 px-4 py-2 bg-blue-600 text-white rounded-lg 
-                                hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                              disabled={isSubmitting || !newComment.trim()}
-                            >
-                              {isSubmitting ? (
-                                <div className="flex items-center space-x-2">
-                                  <Spinner size="sm" />
-                                  <span>Posting...</span>
-                                </div>
-                              ) : (
-                                'Post'
-                              )}
-                            </button>
-                          </div>
-                          {moderationError && (
-                            <div className="mt-2 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                              {moderationError}
-                            </div>
-                          )}
-                        </form>
-
-                        {commentsError && (
-                          <div className="text-red-500 dark:text-red-400 mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                            {commentsError}
-                          </div>
-                        )}
-                        
-                        {commentsLoading ? (
+                    {summaryType && (loadingSummary || summaryError || summary || keyPoints) && (
+                      <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <h2 className="text-lg font-semibold mb-4 dark:text-gray-100">
+                          {summaryType === 'summary' ? 'Summary' : 'Key Points'}
+                        </h2>
+                        {loadingSummary ? (
                           <div className="flex justify-center p-4">
                             <Spinner size="md" />
                           </div>
-                        ) : (
-                          <div className="space-y-6">
-                            {comments.length === 0 ? (
-                              <div className="text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <p className="text-gray-500 dark:text-gray-400">
-                                  No comments yet. Be the first to share your thoughts!
-                                </p>
+                        ) : summaryError ? (
+                          <div className="text-red-500 dark:text-red-400 p-4">{summaryError}</div>
+                        ) : summaryType === 'summary' && summary ? (
+                          <div className="prose prose-gray dark:prose-invert">
+                            <p className="text-gray-800 dark:text-gray-200">{summary}</p>
+                          </div>
+                        ) : summaryType === 'keyPoints' && keyPoints ? (
+                          <div className="prose prose-gray dark:prose-invert">
+                            <ul className="list-disc pl-4 space-y-2">
+                              {keyPoints.map((point, index) => (
+                                <li key={index} className="text-gray-800 dark:text-gray-200">
+                                  {point}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+
+                    <div className="prose prose-lg dark:prose-invert max-w-none select-text">
+                      <ReactMarkdown
+                        components={{
+                          p: ({children}) => (
+                            <p className="mb-4 leading-relaxed dark:text-gray-300 select-text">
+                              {children}
+                            </p>
+                          ),
+                          h1: ({children}) => (
+                            <h1 className="text-2xl font-bold my-4 dark:text-gray-100 select-text">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({children}) => (
+                            <h2 className="text-xl font-bold my-3 dark:text-gray-200 select-text">
+                              {children}
+                            </h2>
+                          ),
+                          a: ({href, children}) => (
+                            <a 
+                              href={href}
+                              className="text-blue-600 hover:underline dark:text-blue-400 select-text"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {children}
+                            </a>
+                          )
+                        }}
+                      >
+                        {processedContent}
+                      </ReactMarkdown>
+                    </div>
+
+                    {article.citations && article.citations.length > 0 && (
+                      <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                        <h2 className="text-xl font-semibold mb-4 dark:text-gray-200">Citations</h2>
+                        <ol className="list-decimal list-inside space-y-2">
+                          {article.citations.map((citation, index) => (
+                            <li key={index} className="text-gray-600 dark:text-gray-400">
+                              <a
+                                href={citation}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline break-all dark:text-blue-400"
+                              >
+                                {citation}
+                              </a>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    {user && (
+                      <div className="mt-8 border-t pt-8 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-xl font-semibold dark:text-gray-100">Comments</h2>
+                          <button
+                            onClick={() => setShowComments(!showComments)}
+                            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200
+                              ${showComments 
+                                ? 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100' 
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                              } hover:bg-gray-200 dark:hover:bg-gray-600`}
+                          >
+                            <MessageCircle className="w-5 h-5" />
+                            <span>{showComments ? 'Hide Comments' : 'Show Comments'}</span>
+                            {!showComments && comments.length > 0 && (
+                              <span className="ml-2 px-2 py-0.5 bg-blue-500 dark:bg-blue-600 text-white text-sm rounded-full">
+                                {comments.length}
+                              </span>
+                            )}
+                          </button>
+                        </div>
+
+                        {showComments && (
+                          <>
+                            <div className="flex justify-between items-center mb-6">
+                              <div className="flex items-center space-x-4">
+                                <h2 className="text-xl font-semibold dark:text-gray-100">
+                                  Comments {comments.length > 0 && `(${comments.length})`}
+                                </h2>
+                                <div className="relative">
+                                  <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="appearance-none bg-white dark:bg-gray-700 border border-gray-200 
+                                      dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 
+                                      dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="likes">Most Liked</option>
+                                    <option value="newest">Newest</option>
+                                  </select>
+                                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 
+                                    text-gray-500 pointer-events-none" />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <form onSubmit={addComment} className="mb-8">
+                              <div className="relative">
+                                <textarea
+                                  value={newComment}
+                                  onChange={(e) => {
+                                    setNewComment(e.target.value);
+                                    setModerationError('');
+                                  }}
+                                  className="w-full p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 
+                                    dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                    dark:focus:ring-blue-400 pr-24"
+                                  placeholder="What are your thoughts?"
+                                  rows="3"
+                                  disabled={isSubmitting}
+                                />
+                                <button 
+                                  type="submit"
+                                  className="absolute bottom-3 right-3 px-4 py-2 bg-blue-600 text-white rounded-lg 
+                                    hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                  disabled={isSubmitting || !newComment.trim()}
+                                >
+                                  {isSubmitting ? (
+                                    <div className="flex items-center space-x-2">
+                                      <Spinner size="sm" />
+                                      <span>Posting...</span>
+                                    </div>
+                                  ) : (
+                                    'Post'
+                                  )}
+                                </button>
+                              </div>
+                              {moderationError && (
+                                <div className="mt-2 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                                  {moderationError}
+                                </div>
+                              )}
+                            </form>
+
+                            {commentsError && (
+                              <div className="text-red-500 dark:text-red-400 mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                {commentsError}
+                              </div>
+                            )}
+                            
+                            {commentsLoading ? (
+                              <div className="flex justify-center p-4">
+                                <Spinner size="md" />
                               </div>
                             ) : (
-                              comments.map(comment => (
-                                <div 
-                                  key={comment.id} 
-                                  className="bg-white dark:bg-gray-800/50 rounded-lg p-4 shadow-sm 
-                                    transition-shadow duration-200 hover:shadow-md"
-                                >
-                                  <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center">
-                                      <img 
-                                        src={comment.userPhoto} 
-                                        alt={comment.userName}
-                                        className="w-8 h-8 rounded-full mr-3 border dark:border-gray-700"
-                                      />
-                                      <div>
-                                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                                          {comment.userName}
-                                        </span>
-                                        <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                                          {comment.timestamp?.toLocaleDateString(undefined, {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric'
-                                          })}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <button
-                                        onClick={() => toggleLike(comment.id, comment.likes, comment.likedBy || [])}
-                                        className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all duration-200 
-                                          ${commentLikes[comment.id]
-                                            ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                          } ${likingComments[comment.id] ? 'opacity-50 cursor-wait' : ''}`}
-                                        disabled={!user || likingComments[comment.id]}
-                                        title={user ? 'Like comment' : 'Sign in to like comments'}
-                                      >
-                                        <ThumbsUp className={`w-4 h-4 ${likingComments[comment.id] ? 'animate-pulse' : ''}`} />
-                                        <span className="font-medium">{comment.likes || 0}</span>
-                                      </button>
-                                      {user && comment.userId === user.uid && (
-                                        <button
-                                          onClick={() => deleteComment(comment.id)}
-                                          className="p-1.5 text-gray-400 hover:text-red-500 dark:text-gray-500 
-                                            dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 
-                                            transition-colors duration-200"
-                                          title="Delete comment"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      )}
-                                    </div>
+                              <div className="space-y-6">
+                                {comments.length === 0 ? (
+                                  <div className="text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                      No comments yet. Be the first to share your thoughts!
+                                    </p>
                                   </div>
-                                  <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
-                                    {comment.content}
-                                  </p>
-                                </div>
-                              ))
+                                ) : (
+                                  comments.map(comment => (
+                                    <div 
+                                      key={comment.id} 
+                                      className="bg-white dark:bg-gray-800/50 rounded-lg p-4 shadow-sm 
+                                        transition-shadow duration-200 hover:shadow-md"
+                                    >
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center">
+                                          <img 
+                                            src={comment.userPhoto} 
+                                            alt={comment.userName}
+                                            className="w-8 h-8 rounded-full mr-3 border dark:border-gray-700"
+                                          />
+                                          <div>
+                                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                                              {comment.userName}
+                                            </span>
+                                            <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                                              {comment.timestamp?.toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                              })}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <button
+                                            onClick={() => toggleLike(comment.id, comment.likes, comment.likedBy || [])}
+                                            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all duration-200 
+                                              ${commentLikes[comment.id]
+                                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                              } ${likingComments[comment.id] ? 'opacity-50 cursor-wait' : ''}`}
+                                            disabled={!user || likingComments[comment.id]}
+                                            title={user ? 'Like comment' : 'Sign in to like comments'}
+                                          >
+                                            <ThumbsUp className={`w-4 h-4 ${likingComments[comment.id] ? 'animate-pulse' : ''}`} />
+                                            <span className="font-medium">{comment.likes || 0}</span>
+                                          </button>
+                                          {user && comment.userId === user.uid && (
+                                            <button
+                                              onClick={() => deleteComment(comment.id)}
+                                              className="p-1.5 text-gray-400 hover:text-red-500 dark:text-gray-500 
+                                                dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 
+                                                transition-colors duration-200"
+                                              title="Delete comment"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
+                                        {comment.content}
+                                      </p>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
                             )}
-                          </div>
+                          </>
                         )}
-                      </>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
-              </>
+              </CardContent>
+            </Card>
+            {article && !loading && !error && (
+              <RelatedArticles currentArticle={article} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
       <Footer />
     </div>
