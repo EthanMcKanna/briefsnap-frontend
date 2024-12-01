@@ -11,6 +11,12 @@ import { Spinner } from './ui/Spinner';
 
 const ITEMS_PER_PAGE = 100;
 
+const isSameDay = (date1, date2) => {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
 const formatRelativeDate = (date) => {
   const now = new Date();
   const diff = now - date;
@@ -25,6 +31,42 @@ const formatRelativeDate = (date) => {
   } else {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
+};
+
+const formatDateHeader = (date) => {
+  const now = new Date();
+  if (isSameDay(date, now)) return 'Today';
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, yesterday)) return 'Yesterday';
+  
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+};
+
+const groupByDate = (items) => {
+  const groups = {};
+  
+  items.forEach(item => {
+    const date = new Date(item.lastRead);
+    date.setHours(0, 0, 0, 0);
+    const dateKey = date.toISOString();
+    
+    if (!groups[dateKey]) {
+      groups[dateKey] = {
+        date,
+        items: []
+      };
+    }
+    groups[dateKey].items.push(item);
+  });
+
+  return Object.values(groups).sort((a, b) => b.date - a.date);
 };
 
 export default function ReadingHistory() {
@@ -139,7 +181,7 @@ export default function ReadingHistory() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             {loading ? (
               <div className="flex justify-center p-8">
                 <Spinner size="lg" />
@@ -151,33 +193,40 @@ export default function ReadingHistory() {
                 No reading history yet. Start reading articles to see them here!
               </div>
             ) : (
-              <div className="space-y-4">
-                {history.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start justify-between p-4 bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-                  >
-                    <div 
-                      className="flex-1 cursor-pointer"
-                      onClick={() => navigate(`/article/${item.slug}`)}
-                    >
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 hover:text-blue-600 dark:hover:text-blue-400">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {item.description}
-                      </p>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          Read {formatRelativeDate(item.lastRead)}
-                        </span>
-                        {item.timestamp !== item.lastRead && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            First read {formatRelativeDate(item.timestamp)}
-                          </span>
-                        )}
+              <div className="space-y-6">
+                {groupByDate(history).map(({ date, items }) => (
+                  <div key={date.toISOString()} className="space-y-4">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 sticky top-0 bg-gray-100 dark:bg-gray-900 py-2 px-4 z-10">
+                      {formatDateHeader(date)}
+                    </h2>
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start justify-between p-4 bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                      >
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => navigate(`/article/${item.slug}`)}
+                        >
+                          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 hover:text-blue-600 dark:hover:text-blue-400">
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {item.description}
+                          </p>
+                          <div className="flex items-center space-x-4 mt-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Read at {item.lastRead.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                            {item.timestamp !== item.lastRead && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                First read {formatRelativeDate(item.timestamp)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 ))}
                 {hasMore && (

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { startOfWeek, endOfWeek } from 'date-fns';
 import { auth } from '../firebase';
 import { 
   signInWithPopup, 
@@ -13,6 +14,7 @@ import {
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, userCollection, calendarTokensCollection } from '../firebase';
 import { useTheme } from './ThemeContext';
+import { useCache } from './CacheContext';
 
 const AuthContext = createContext();
 
@@ -30,6 +32,7 @@ export function AuthProvider({ children }) {
   const [userCalendars, setUserCalendars] = useState([]);
   const [calendarVisibility, setCalendarVisibility] = useState({});
   const { setTheme } = useTheme();
+  const cache = useCache();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -178,6 +181,15 @@ export function AuthProvider({ children }) {
 
   const fetchCalendarEvents = async () => {
     console.log('Attempting to fetch calendar events');
+    
+    if (cache?.getCachedCalendarEvents) {
+      const cachedEvents = cache.getCachedCalendarEvents();
+      if (cachedEvents) {
+        setCalendarEvents(cachedEvents);
+        return;
+      }
+    }
+
     console.log('Current state:', {
       userExists: !!user,
       calendarIntegration: userPreferences?.calendarIntegration,
@@ -206,15 +218,14 @@ export function AuthProvider({ children }) {
         throw new Error('No calendars available');
       }
 
-      const today = new Date();
+      const today = startOfWeek(new Date());
       today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const endDate = endOfWeek(today);
 
       // Fetch events from all calendars
       const eventsPromises = calendars.map(async (calendar) => {
         const calendarResponse = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?timeMin=${today.toISOString()}&timeMax=${tomorrow.toISOString()}&singleEvents=true&orderBy=startTime`,
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?timeMin=${today.toISOString()}&timeMax=${endDate.toISOString()}&singleEvents=true&orderBy=startTime`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -240,6 +251,11 @@ export function AuthProvider({ children }) {
       const allEvents = await Promise.all(eventsPromises);
       const mergedEvents = allEvents.flat().filter(event => event.status !== 'cancelled');
       setCalendarEvents(mergedEvents);
+      
+      // Cache the events if caching is available
+      if (cache?.cacheCalendarEvents) {
+        cache.cacheCalendarEvents(mergedEvents);
+      }
     } catch (error) {
       console.error('Error fetching calendar events:', error);
       if (error.message.includes('authorization') || error.code === 'auth/popup-blocked') {

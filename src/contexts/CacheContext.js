@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { startOfWeek, endOfWeek, isSameDay } from 'date-fns';
 
 const CacheContext = createContext();
 
@@ -181,8 +182,13 @@ export function CacheProvider({ children }) {
 
   const cacheCalendarEvents = useCallback((events) => {
     console.log('💾 Caching calendar events');
+    const weekStart = startOfWeek(new Date());
+    const weekEnd = endOfWeek(weekStart);
+    
     setCalendarCache({
       data: events,
+      weekStart: weekStart.toISOString(),
+      weekEnd: weekEnd.toISOString(),
       timestamp: Date.now()
     });
   }, []);
@@ -192,14 +198,21 @@ export function CacheProvider({ children }) {
       console.log('🔍 Cache miss: calendar events');
       return null;
     }
-    if (Date.now() - calendarCache.timestamp > CACHE_EXPIRY) {
-      console.log('⌛ Cache expired: calendar events');
+
+    const currentWeekStart = startOfWeek(new Date());
+    const cachedWeekStart = new Date(calendarCache.weekStart);
+
+    // Invalidate cache if it's for a different week or too old
+    if (!isSameDay(currentWeekStart, cachedWeekStart) || 
+        Date.now() - calendarCache.timestamp > 5 * 60 * 1000) { // 5 minutes
+      console.log('⌛ Cache expired: calendar events (new week or timeout)');
       setCalendarCache(null);
       return null;
     }
+
     console.log('✅ Cache hit: calendar events');
     return calendarCache.data;
-  }, [calendarCache, CACHE_EXPIRY]);
+  }, [calendarCache]);
 
   const cacheSitemapArticles = (articles) => {
     localStorage.setItem('sitemap_articles', JSON.stringify({
