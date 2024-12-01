@@ -18,20 +18,22 @@ export default function Header() {
               BriefSnap
             </Link>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 sm:space-x-6">
               {user && (
                 <>
                   <Link
                     to="/articles"
-                    className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                   >
                     <Newspaper className="h-5 w-5" />
+                    <span className="hidden sm:inline">Articles</span>
                   </Link>
                   <Link
                     to="/bookmarks"
-                    className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                   >
                     <Bookmark className="h-5 w-5" />
+                    <span className="hidden sm:inline">Bookmarks</span>
                   </Link>
                 </>
               )}
