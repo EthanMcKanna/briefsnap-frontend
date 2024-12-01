@@ -113,12 +113,44 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshCalendarToken = async (refreshToken) => {
+    try {
+      const response = await fetch('https://refreshcalendartoken-t56b56emaq-uc.a.run.app', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        },
+        body: JSON.stringify({ refreshToken })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+
+      const { accessToken, expiresIn } = await response.json();
+      const expirationTime = new Date().getTime() + expiresIn * 1000;
+
+      await setDoc(doc(db, calendarTokensCollection, user.uid), {
+        accessToken,
+        refreshToken,
+        expirationTime,
+        timestamp: new Date()
+      });
+
+      setCalendarToken(accessToken);
+      return accessToken;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      await deleteDoc(doc(db, calendarTokensCollection, user.uid));
+      setCalendarToken(null);
+      throw error;
+    }
+  };
+
   const authorizeCalendar = async () => {
     console.log('Attempting calendar authorization');
-    if (isCalendarAuthorizing) {
-      console.log('Calendar authorization already in progress');
-      return null;
-    }
+    if (isCalendarAuthorizing) return null;
     
     try {
       setIsCalendarAuthorizing(true);
@@ -128,10 +160,16 @@ export function AuthProvider({ children }) {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       
       if (credential?.accessToken) {
+        const { refreshToken } = result._tokenResponse;
+        const expirationTime = new Date().getTime() + 3600 * 1000;
+
         await setDoc(doc(db, calendarTokensCollection, user.uid), {
-          token: credential.accessToken,
+          accessToken: credential.accessToken,
+          refreshToken,
+          expirationTime,
           timestamp: new Date()
         });
+
         setCalendarToken(credential.accessToken);
         return credential.accessToken;
       }
@@ -141,6 +179,25 @@ export function AuthProvider({ children }) {
       throw error;
     } finally {
       setIsCalendarAuthorizing(false);
+    }
+  };
+
+  const getValidCalendarToken = async () => {
+    try {
+      const tokenDoc = await getDoc(doc(db, calendarTokensCollection, user.uid));
+      if (!tokenDoc.exists()) return null;
+
+      const { accessToken, refreshToken, expirationTime } = tokenDoc.data();
+      const now = new Date().getTime();
+
+      if (now >= expirationTime) {
+        return await refreshCalendarToken(refreshToken);
+      }
+
+      return accessToken;
+    } catch (error) {
+      console.error('Error getting valid token:', error);
+      return null;
     }
   };
 
@@ -202,7 +259,7 @@ export function AuthProvider({ children }) {
     }
     
     try {
-      let accessToken = calendarToken;
+      let accessToken = await getValidCalendarToken();
       console.log('Using stored token:', !!accessToken);
       
       if (!accessToken) {
