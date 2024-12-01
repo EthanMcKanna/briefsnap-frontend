@@ -172,7 +172,23 @@ export default function UserSettings() {
   };
 
   const debouncedLocationUpdate = useCallback(
-    debounce((value) => handlePreferenceChange('location', value), 500),
+    debounce(async (value) => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}`
+        );
+        const data = await response.json();
+        if (data && data[0]) {
+          handlePreferenceChange('location', {
+            name: value,
+            lat: data[0].lat,
+            lon: data[0].lon
+          });
+        }
+      } catch (error) {
+        console.error('Error updating location:', error);
+      }
+    }, 500),
     [handlePreferenceChange]
   );
 
@@ -312,6 +328,24 @@ export default function UserSettings() {
     newTopics.splice(result.destination.index, 0, reorderedItem);
     
     await handlePreferenceChange('pinnedTopics', newTopics);
+  };
+
+  const handleGeolocationError = (error) => {
+    let message = '';
+    switch (error.code) {
+      case 1:
+        message = 'Location access was denied. Please check your browser settings.';
+        break;
+      case 2:
+        message = 'Unable to determine your location. Please try entering it manually.';
+        break;
+      case 3:
+        message = 'Location request timed out. Please try again.';
+        break;
+      default:
+        message = 'An error occurred while getting your location. Please try entering it manually.';
+    }
+    alert(message);
   };
 
   return (
@@ -454,25 +488,52 @@ export default function UserSettings() {
                       <input
                         type="text"
                         placeholder="Enter city name"
-                        defaultValue={userPreferences.location || ''}
+                        defaultValue={userPreferences.location?.name || ''}
                         onChange={(e) => debouncedLocationUpdate(e.target.value)}
                         className="flex-1 appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <button
                         onClick={async () => {
-                          if (navigator.geolocation) {
-                            try {
-                              const position = await new Promise((resolve, reject) => {
-                                navigator.geolocation.getCurrentPosition(resolve, reject);
+                          if (!navigator.geolocation) {
+                            alert('Geolocation is not supported by your browser. Please enter your location manually.');
+                            return;
+                          }
+
+                          try {
+                            const position = await new Promise((resolve, reject) => {
+                              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                                timeout: 10000,
+                                maximumAge: 0,
+                                enableHighAccuracy: false
                               });
+                            });
                               
-                              const response = await fetch(
-                                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-                              );
-                              const data = await response.json();
-                              handlePreferenceChange('location', data.address.city || data.address.town);
-                            } catch (error) {
-                              console.error('Error getting location:', error);
+                            const response = await fetch(
+                              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+                            );
+                            
+                            if (!response.ok) {
+                              throw new Error('Failed to fetch location data');
+                            }
+
+                            const data = await response.json();
+                            const locationName = data.address.city || data.address.town || data.address.county;
+                            
+                            if (!locationName) {
+                              throw new Error('Could not determine city name from coordinates');
+                            }
+
+                            handlePreferenceChange('location', {
+                              name: locationName,
+                              lat: position.coords.latitude,
+                              lon: position.coords.longitude
+                            });
+                          } catch (error) {
+                            console.error('Error getting location:', error);
+                            if (error instanceof GeolocationPositionError) {
+                              handleGeolocationError(error);
+                            } else {
+                              alert('Failed to get location. Please try entering it manually.');
                             }
                           }
                         }}

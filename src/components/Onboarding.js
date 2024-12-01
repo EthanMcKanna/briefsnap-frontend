@@ -169,8 +169,25 @@ export default function Onboarding() {
       console.log('Update in progress, skipping button action');
       return;
     }
-    // Remove the artificial delay
     await action();
+  };
+
+  const handleGeolocationError = (error) => {
+    let message = '';
+    switch (error.code) {
+      case 1:
+        message = 'Location access was denied. Please check your browser settings.';
+        break;
+      case 2:
+        message = 'Unable to determine your location. Please try entering it manually.';
+        break;
+      case 3:
+        message = 'Location request timed out. Please try again.';
+        break;
+      default:
+        message = 'An error occurred while getting your location. Please try entering it manually.';
+    }
+    alert(message);
   };
 
   const steps = [
@@ -311,9 +328,26 @@ export default function Onboarding() {
 
         const [locationInput, setLocationInput] = useState(userPreferences.location || '');
 
-        // Add the debounced update function
         const debouncedLocationUpdate = useCallback(
-          debounce((value) => handlePreferenceUpdate({ location: value }), 500),
+          debounce(async (value) => {
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}`
+              );
+              const data = await response.json();
+              if (data && data[0]) {
+                handlePreferenceUpdate({
+                  location: {
+                    name: value,
+                    lat: data[0].lat,
+                    lon: data[0].lon
+                  }
+                });
+              }
+            } catch (error) {
+              console.error('Error updating location:', error);
+            }
+          }, 500),
           []
         );
 
@@ -370,28 +404,63 @@ export default function Onboarding() {
                     <input
                       type="text"
                       placeholder="Enter city name"
-                      value={locationInput}
+                      value={locationInput?.name || locationInput || ''}
                       onChange={(e) => {
-                        setLocationInput(e.target.value);
-                        debouncedLocationUpdate(e.target.value);
+                        const value = e.target.value;
+                        setLocationInput(value);
+                        debouncedLocationUpdate(value);
                       }}
                       className="flex-1 appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                       onClick={async () => {
-                        if (navigator.geolocation) {
-                          try {
-                            const position = await new Promise((resolve, reject) => {
-                              navigator.geolocation.getCurrentPosition(resolve, reject);
+                        if (!navigator.geolocation) {
+                          alert('Geolocation is not supported by your browser. Please enter your location manually.');
+                          return;
+                        }
+
+                        try {
+                          const position = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                              timeout: 10000,
+                              maximumAge: 0,
+                              enableHighAccuracy: false
                             });
+                          });
                             
-                            const response = await fetch(
-                              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-                            );
-                            const data = await response.json();
-                            handlePreferenceUpdate({ location: data.address.city || data.address.town });
-                          } catch (error) {
-                            console.error('Error getting location:', error);
+                          const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+                          );
+                          
+                          if (!response.ok) {
+                            throw new Error('Failed to fetch location data');
+                          }
+
+                          const data = await response.json();
+                          const locationName = data.address.city || data.address.town || data.address.county;
+                          
+                          if (!locationName) {
+                            throw new Error('Could not determine city name from coordinates');
+                          }
+
+                          handlePreferenceUpdate({
+                            location: {
+                              name: locationName,
+                              lat: position.coords.latitude,
+                              lon: position.coords.longitude
+                            }
+                          });
+                          setLocationInput({
+                            name: locationName,
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                          });
+                        } catch (error) {
+                          console.error('Error getting location:', error);
+                          if (error instanceof GeolocationPositionError) {
+                            handleGeolocationError(error);
+                          } else {
+                            alert('Failed to get location. Please try entering it manually.');
                           }
                         }
                       }}
@@ -417,7 +486,7 @@ export default function Onboarding() {
                       window.navigator.vibrate(50);
                     }
                   }}
-                  modifiers={[]} // Remove any restrictive modifiers
+                  modifiers={[]}
                   onDragEnd={({ active, over }) => {
                     if (!over || active.id === over.id) return;
                     

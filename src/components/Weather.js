@@ -45,18 +45,19 @@ const WeatherSkeleton = () => (
 const WeatherIcon = ({ code }) => {
   const iconClasses = "w-6 h-6 text-gray-700 dark:text-gray-300";
   
+  // NWS weather codes mapping
   switch (code) {
-    case 1000: // Clear, Sunny
+    case 'skc': case 'few': // Clear, Sunny
       return <Sun className={iconClasses} />;
-    case 1100: case 1101: case 1102: // Mostly Clear, Partly Cloudy
+    case 'sct': case 'bkn': // Partly Cloudy
       return <Cloudy className={iconClasses} />;
-    case 1001: // Cloudy
+    case 'ovc': // Overcast
       return <Cloud className={iconClasses} />;
-    case 4000: case 4001: case 4200: case 4201: // Rain
+    case 'rain': case 'rain_showers': case 'rain_sleet':
       return <CloudRain className={iconClasses} />;
-    case 5000: case 5001: case 5100: case 5101: // Snow
+    case 'snow': case 'snow_sleet': case 'blizzard':
       return <CloudSnow className={iconClasses} />;
-    case 8000: // Thunderstorm
+    case 'tsra': case 'tsra_sct': case 'tsra_hi':
       return <CloudLightning className={iconClasses} />;
     default:
       return <Wind className={iconClasses} />;
@@ -87,66 +88,87 @@ export default function Weather({ location }) {
     const controller = new AbortController();
     
     const fetchWeather = async (attempt = 0) => {
-      if (!location) return;
+      if (!location?.lat || !location?.lon) return;
       
       try {
         setLoading(true);
         setError(null);
 
-        const cachedData = getCachedWeather(location);
+        const cachedData = getCachedWeather(`${location.lat},${location.lon}`);
         if (cachedData) {
           setWeather(cachedData);
           setLoading(false);
           return;
         }
 
-        const geoResponse = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`,
-          { signal: controller.signal }
-        );
-        
-        if (!geoResponse.ok) {
-          throw new Error('Location lookup failed');
-        }
-
-        const geoData = await geoResponse.json();
-        
-        if (!geoData || geoData.length === 0) {
-          throw new Error(`Location "${location}" not found`);
-        }
-
-        const { lat, lon } = geoData[0];
-        
-        const response = await fetch(
-          `https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&apikey=yJ2NVjACvteaFBRz1DgcnjK3vJk33naR&units=imperial`
-        );
-        
-        if (response.status === 429 && attempt < MAX_RETRIES) {
-          // Rate limited, retry after delay
-          console.log(`Rate limited, retrying in ${RETRY_DELAY}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-          return fetchWeather(attempt + 1);
-        }
-
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error('Weather service is busy. Please try again in a few minutes.');
+        const pointsResponse = await fetch(
+          `https://api.weather.gov/points/${location.lat},${location.lon}`,
+          { 
+            signal: controller.signal,
+            headers: { 'User-Agent': 'BriefSnap Weather Widget' }
           }
+        );
+        
+        if (!pointsResponse.ok) throw new Error('Weather service points lookup failed');
+        
+        const points = await pointsResponse.json();
+        
+        const [forecastResponse, hourlyResponse] = await Promise.all([
+          fetch(points.properties.forecast, { 
+            signal: controller.signal,
+            headers: { 'User-Agent': 'BriefSnap Weather App' }
+          }),
+          fetch(points.properties.forecastHourly, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'BriefSnap Weather App' }
+          })
+        ]);
+
+        if (!forecastResponse.ok || !hourlyResponse.ok) {
           throw new Error('Weather service unavailable');
         }
 
-        const data = await response.json();
-        
-        // Validate required data
-        if (!data.timelines?.minutely?.[0] || 
-            !data.timelines?.hourly || 
-            !data.timelines?.daily) {
-          throw new Error('Invalid weather data format');
-        }
+        const [forecast, hourly] = await Promise.all([
+          forecastResponse.json(),
+          hourlyResponse.json()
+        ]);
 
-        cacheWeather(location, data);
-        setWeather(data);
-        setRetryCount(0); // Reset retry count on success
+        const transformedData = {
+          timelines: {
+            minutely: [{
+              time: new Date().toISOString(),
+              values: {
+                temperature: hourly.properties.periods[0].temperature,
+                temperatureApparent: hourly.properties.periods[0].temperature,
+                weatherCode: hourly.properties.periods[0].shortForecast.toLowerCase().replace(/\s+/g, '_'),
+                humidity: hourly.properties.periods[0].relativeHumidity?.value || 0,
+                windSpeed: hourly.properties.periods[0].windSpeed.split(' ')[0],
+                precipitationProbability: forecast.properties.periods[0].probabilityOfPrecipitation?.value || 0
+              }
+            }],
+            hourly: hourly.properties.periods.map(period => ({
+              time: period.startTime,
+              values: {
+                temperature: period.temperature,
+                weatherCode: period.shortForecast.toLowerCase().replace(/\s+/g, '_')
+              }
+            })),
+            daily: forecast.properties.periods
+              .filter((_, i) => i % 2 === 0)
+              .map(period => ({
+                time: period.startTime,
+                values: {
+                  temperatureMax: period.temperature,
+                  temperatureMin: forecast.properties.periods[forecast.properties.periods.findIndex(p => p.startTime === period.startTime) + 1]?.temperature || period.temperature,
+                  weatherCode: period.shortForecast.toLowerCase().replace(/\s+/g, '_')
+                }
+              }))
+          }
+        };
+
+        cacheWeather(`${location.lat},${location.lon}`, transformedData);
+        setWeather(transformedData);
+        setRetryCount(0);
 
       } catch (error) {
         if (error.name === 'AbortError') return;
@@ -206,7 +228,7 @@ export default function Weather({ location }) {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              {location}
+              {location.name}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
