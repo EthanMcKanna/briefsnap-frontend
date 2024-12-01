@@ -47,17 +47,23 @@ const WeatherIcon = ({ code }) => {
   
   // NWS weather codes mapping
   switch (code) {
-    case 'skc': case 'few': // Clear, Sunny
+    case 'skc': case 'few': case 'clear': case 'sunny': case 'mostly_clear':
       return <Sun className={iconClasses} />;
-    case 'sct': case 'bkn': // Partly Cloudy
+    case 'sct': case 'bkn': case 'partly_cloudy': case 'mostly_cloudy':
       return <Cloudy className={iconClasses} />;
-    case 'ovc': // Overcast
+    case 'ovc': case 'cloudy': case 'overcast':
       return <Cloud className={iconClasses} />;
-    case 'rain': case 'rain_showers': case 'rain_sleet':
+    case 'rain': case 'rain_showers': case 'rain_sleet': case 'chance_rain': 
+    case 'slight_chance_rain': case 'likely_rain': case 'chance_rain_showers':
+    case 'slight_chance_rain_showers':
       return <CloudRain className={iconClasses} />;
-    case 'snow': case 'snow_sleet': case 'blizzard':
+    case 'snow': case 'snow_sleet': case 'blizzard': case 'chance_snow': 
+    case 'slight_chance_snow': case 'chance_snow_showers': case 'light_snow_likely':
       return <CloudSnow className={iconClasses} />;
-    case 'tsra': case 'tsra_sct': case 'tsra_hi':
+    case 'rain_and_snow_likely': case 'rain_and_snow':
+      return <CloudRain className={iconClasses} />;
+    case 'tsra': case 'tsra_sct': case 'tsra_hi': case 'thunderstorms': 
+    case 'scattered_thunderstorms':
       return <CloudLightning className={iconClasses} />;
     default:
       return <Wind className={iconClasses} />;
