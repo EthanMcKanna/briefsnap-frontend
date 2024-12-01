@@ -9,6 +9,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { debounce } from 'lodash';
+import { LocationSearch } from './common/LocationSearch';
 
 const BetaTag = () => (
   <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
@@ -396,79 +397,15 @@ export default function Onboarding() {
                 </button>
               ))}
               {userPreferences.showWeather && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     Set your location for weather updates:
                   </p>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Enter city name"
-                      value={locationInput?.name || locationInput || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setLocationInput(value);
-                        debouncedLocationUpdate(value);
-                      }}
-                      className="flex-1 appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      onClick={async () => {
-                        if (!navigator.geolocation) {
-                          alert('Geolocation is not supported by your browser. Please enter your location manually.');
-                          return;
-                        }
-
-                        try {
-                          const position = await new Promise((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                              timeout: 10000,
-                              maximumAge: 0,
-                              enableHighAccuracy: false
-                            });
-                          });
-                            
-                          const response = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-                          );
-                          
-                          if (!response.ok) {
-                            throw new Error('Failed to fetch location data');
-                          }
-
-                          const data = await response.json();
-                          const locationName = data.address.city || data.address.town || data.address.county;
-                          
-                          if (!locationName) {
-                            throw new Error('Could not determine city name from coordinates');
-                          }
-
-                          handlePreferenceUpdate({
-                            location: {
-                              name: locationName,
-                              lat: position.coords.latitude,
-                              lon: position.coords.longitude
-                            }
-                          });
-                          setLocationInput({
-                            name: locationName,
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                          });
-                        } catch (error) {
-                          console.error('Error getting location:', error);
-                          if (error instanceof GeolocationPositionError) {
-                            handleGeolocationError(error);
-                          } else {
-                            alert('Failed to get location. Please try entering it manually.');
-                          }
-                        }
-                      }}
-                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
-                    >
-                      <MapPin className="w-5 h-5" />
-                    </button>
-                  </div>
+                  <LocationSearch
+                    initialLocation={userPreferences.location}
+                    onLocationSelect={(location) => handlePreferenceUpdate({ location })}
+                    className="relative z-[60]"
+                  />
                 </div>
               )}
             </div>
@@ -578,7 +515,7 @@ export default function Onboarding() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="relative bg-white dark:bg-gray-800 w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-md sm:w-full mx-auto sm:rounded-2xl overflow-hidden flex flex-col"
+        className="relative bg-white dark:bg-gray-800 w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-md sm:w-full mx-auto sm:rounded-2xl flex flex-col"
       >
         <div className="flex-none sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b dark:border-gray-700">
           <button

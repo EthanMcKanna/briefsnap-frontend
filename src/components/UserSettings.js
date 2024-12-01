@@ -4,13 +4,16 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import Header from './Header';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/Card';
-import { Settings, Bell, Monitor, ChevronDown, Tag, PlusCircle, XCircle, MapPin, Calendar, TrendingUp, Plus, X, Layout, Search, Pencil, GripVertical } from 'lucide-react';
+import { Settings, Bell, Monitor, ChevronDown, Tag, PlusCircle, XCircle, MapPin, Calendar, TrendingUp, Plus, X, Layout, Search, Pencil, GripVertical, Loader } from 'lucide-react';
 import { debounce } from 'lodash';
 import { StrictMode } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useCombobox } from 'downshift';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LocationSearch } from './common/LocationSearch';
 
 const TOPICS = [
   { value: 'BUSINESS', label: 'Business' },
@@ -484,63 +487,11 @@ export default function UserSettings() {
 
                 {userPreferences.showWeather && (
                   <div className="flex items-center justify-between ml-7">
-                    <div className="flex items-center space-x-2 flex-1">
-                      <input
-                        type="text"
-                        placeholder="Enter city name"
-                        defaultValue={userPreferences.location?.name || ''}
-                        onChange={(e) => debouncedLocationUpdate(e.target.value)}
-                        className="flex-1 appearance-none bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <div className="flex-1">
+                      <LocationSearch
+                        initialLocation={userPreferences.location}
+                        onLocationSelect={(location) => handlePreferenceChange('location', location)}
                       />
-                      <button
-                        onClick={async () => {
-                          if (!navigator.geolocation) {
-                            alert('Geolocation is not supported by your browser. Please enter your location manually.');
-                            return;
-                          }
-
-                          try {
-                            const position = await new Promise((resolve, reject) => {
-                              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                                timeout: 10000,
-                                maximumAge: 0,
-                                enableHighAccuracy: false
-                              });
-                            });
-                              
-                            const response = await fetch(
-                              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-                            );
-                            
-                            if (!response.ok) {
-                              throw new Error('Failed to fetch location data');
-                            }
-
-                            const data = await response.json();
-                            const locationName = data.address.city || data.address.town || data.address.county;
-                            
-                            if (!locationName) {
-                              throw new Error('Could not determine city name from coordinates');
-                            }
-
-                            handlePreferenceChange('location', {
-                              name: locationName,
-                              lat: position.coords.latitude,
-                              lon: position.coords.longitude
-                            });
-                          } catch (error) {
-                            console.error('Error getting location:', error);
-                            if (error instanceof GeolocationPositionError) {
-                              handleGeolocationError(error);
-                            } else {
-                              alert('Failed to get location. Please try entering it manually.');
-                            }
-                          }
-                        }}
-                        className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      >
-                        <MapPin className="w-5 h-5" />
-                      </button>
                     </div>
                   </div>
                 )}
