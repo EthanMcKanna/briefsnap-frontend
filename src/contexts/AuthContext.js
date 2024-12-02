@@ -366,8 +366,6 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async () => {
     try {
       const auth = getAuth();
-      auth.config.authDomain = window.location.host;
-      
       const provider = new GoogleAuthProvider();
       if (userPreferences?.calendarIntegration) {
         provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
