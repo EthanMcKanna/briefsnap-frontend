@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'fs'
+import path from 'path'
 
 export default defineConfig({
   plugins: [
@@ -8,11 +9,15 @@ export default defineConfig({
     {
       name: 'handle-redirects',
       buildEnd() {
-        fs.copyFileSync('public/_redirects', 'build/_redirects')
+        const buildDir = 'build';
+        if (!fs.existsSync(buildDir)) {
+          fs.mkdirSync(buildDir);
+        }
+
+        const redirectsContent = `/__/auth/* https://${process.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com/__/auth/:splat 200
+/* /index.html 200`;
         
-        const content = fs.readFileSync('build/_redirects', 'utf8')
-        const updated = content.replace(':VITE_FIREBASE_PROJECT_ID', process.env.VITE_FIREBASE_PROJECT_ID)
-        fs.writeFileSync('build/_redirects', updated)
+        fs.writeFileSync(path.join(buildDir, '_redirects'), redirectsContent);
       }
     }
   ],
