@@ -2,7 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { startOfWeek, endOfWeek } from 'date-fns';
 import { auth } from '../firebase';
 import { 
-  signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   signOut, 
   getAuth,
@@ -78,6 +79,24 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          if (userPreferences?.calendarIntegration && credential?.accessToken) {
+            await fetchCalendarEvents();
+          }
+        }
+      } catch (error) {
+        console.error('Redirect sign-in error:', error);
+      }
+    };
+
+    handleRedirectResult();
   }, []);
 
   const updatePreferences = async (newPreferences) => {
@@ -347,19 +366,13 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async () => {
     try {
       const auth = getAuth();
-      const provider = new GoogleAuthProvider();
+      auth.config.authDomain = window.location.host;
       
+      const provider = new GoogleAuthProvider();
       if (userPreferences?.calendarIntegration) {
         provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
       }
-      
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      
-      if (userPreferences?.calendarIntegration && credential?.accessToken) {
-        await fetchCalendarEvents();
-      }
-      return result;
+      await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
