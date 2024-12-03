@@ -1,3 +1,0 @@
-
-/__/auth/* https://:VITE_FIREBASE_PROJECT_ID.firebaseapp.com/__/auth/:splat 200
-/* /index.html 200

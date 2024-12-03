@@ -29,7 +29,6 @@ function App() {
                 <BrowserRouter>
                   <Onboarding />
                   <Routes>
-                    <Route path="/__/auth/*" element={<Navigate to="/" replace />} />
                     <Route path="/" element={<BriefSnap />} />
                     <Route path="/article/:slug" element={<FullArticle />} />
                     <Route 

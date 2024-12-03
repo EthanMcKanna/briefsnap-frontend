@@ -2,15 +2,16 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { startOfWeek, endOfWeek } from 'date-fns';
 import { auth } from '../firebase';
 import { 
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup, 
   GoogleAuthProvider, 
   signOut, 
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-  updateProfile
+  updateProfile,
+  getRedirectResult,
+  signInWithRedirect
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, userCollection, calendarTokensCollection } from '../firebase';
@@ -38,6 +39,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+      
+      if (!user) {
+        // Handle sign-in after redirect
+        const result = await getRedirectResult(auth);
+        if (result) {
+          user = result.user;
+          // Handle additional logic if needed
+        }
+      }
+
       if (user) {
         try {
           const userDoc = await getDoc(doc(db, userCollection, user.uid));
@@ -79,24 +90,6 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          const credential = GoogleAuthProvider.credentialFromResult(result);
-          if (userPreferences?.calendarIntegration && credential?.accessToken) {
-            await fetchCalendarEvents();
-          }
-        }
-      } catch (error) {
-        console.error('Redirect sign-in error:', error);
-      }
-    };
-
-    handleRedirectResult();
   }, []);
 
   const updatePreferences = async (newPreferences) => {
@@ -175,24 +168,7 @@ export function AuthProvider({ children }) {
       setIsCalendarAuthorizing(true);
       const provider = new GoogleAuthProvider();
       provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      
-      if (credential?.accessToken) {
-        const { refreshToken } = result._tokenResponse;
-        const expirationTime = new Date().getTime() + 3600 * 1000;
-
-        await setDoc(doc(db, calendarTokensCollection, user.uid), {
-          accessToken: credential.accessToken,
-          refreshToken,
-          expirationTime,
-          timestamp: new Date()
-        });
-
-        setCalendarToken(credential.accessToken);
-        return credential.accessToken;
-      }
-      return null;
+      await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Calendar authorization error:', error);
       throw error;
@@ -365,11 +341,12 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = async () => {
     try {
-      const auth = getAuth();
       const provider = new GoogleAuthProvider();
+      
       if (userPreferences?.calendarIntegration) {
         provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
       }
+      
       await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Login error:', error);

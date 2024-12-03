@@ -80,10 +80,14 @@ export function AuthForms({ onSuccess }) {
   };
 
   const handleGoogleLogin = async () => {
+    setLoading(true);
     try {
       await loginWithGoogle();
+      onSuccess?.();
     } catch (err) {
       setError('An error occurred with Google sign in. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
