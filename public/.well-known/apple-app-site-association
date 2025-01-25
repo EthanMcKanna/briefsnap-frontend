@@ -1,11 +1,11 @@
 {
-    "applinks": {
-      "apps": [],
-      "details": [
-        {
-          "appID": "697K7CH7J6.com.ethanmckanna.firstapp",
-          "paths": [ "/article/*" ]
-        }
-      ]
-    }
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "697K7CH7J6.com.ethanmckanna.firstapp",
+        "paths": [ "/", "/article/*" ]
+      }
+    ]
   }
+}
