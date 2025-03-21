@@ -429,11 +429,21 @@ export default function FullArticle() {
           <meta property="og:description" content={article.description || 'Read this article on BriefSnap'} />
           <meta property="og:type" content="article" />
           <meta property="og:url" content={window.location.href} />
+          {article.img_url && (
+            <>
+              <meta property="og:image" content={article.img_url} />
+              <meta property="og:image:secure_url" content={article.img_url} />
+              <meta property="og:image:alt" content={article.title} />
+            </>
+          )}
           
           {/* Twitter Card meta tags */}
-          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:card" content={article.img_url ? "summary_large_image" : "summary"} />
           <meta name="twitter:title" content={article.title} />
           <meta name="twitter:description" content={article.description || 'Read this article on BriefSnap'} />
+          {article.img_url && (
+            <meta name="twitter:image" content={article.img_url} />
+          )}
         </Helmet>
       )}
       <Header />
@@ -510,6 +520,16 @@ export default function FullArticle() {
                   <div className="text-center text-red-500">{error}</div>
                 ) : (
                   <>
+                    {article.img_url && (
+                      <div className="mb-8 -mt-2 rounded-lg overflow-hidden">
+                        <img 
+                          src={article.img_url} 
+                          alt={article.title}
+                          className="w-full h-auto object-cover max-h-[400px]"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                     <div className="flex gap-4 mb-8">
                       <button
                         onClick={() => handleGenerateClick('summary')}
