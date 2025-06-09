@@ -30,7 +30,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-meta-pages.js",
+    "build:app": "vite build",
+    "generate-meta": "node scripts/generate-meta-pages.js",
     "serve": "vite preview",
     "test": "vitest"
   },

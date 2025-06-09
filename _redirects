@@ -1,0 +1,11 @@
+# Handle webhook endpoint
+/webhook/rebuild  /webhook/rebuild  200
+
+# Static meta pages for pre-generated articles
+/article/:slug.html  /article/:slug.html  200
+
+# Route article requests to Cloudflare Function (handles both static and dynamic)
+/article/:slug  /article/:slug  200
+
+# Fallback to React app for all other requests
+/*  /index.html  200 
