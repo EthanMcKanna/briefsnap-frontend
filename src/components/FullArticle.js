@@ -21,6 +21,19 @@ function formatViewCount(count) {
   return `${Math.round(count/1000000)}M views`;
 }
 
+// Helper function to construct canonical URLs
+const getCanonicalUrl = (slug) => {
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://briefsnap.com' 
+    : 'http://localhost:3000';
+  return `${baseUrl}/article/${slug}`;
+};
+
+// Default fallback image for articles without images
+const DEFAULT_OG_IMAGE = process.env.NODE_ENV === 'production' 
+  ? 'https://briefsnap.com/logo512.png' 
+  : 'http://localhost:3000/logo512.png';
+
 export default function FullArticle() {
   const { slug } = useParams()
   const navigate = useNavigate()
@@ -423,26 +436,40 @@ export default function FullArticle() {
         <Helmet>
           <title>{article.title} | BriefSnap</title>
           <meta name="description" content={article.description || 'Read this article on BriefSnap'} />
+          <link rel="canonical" href={getCanonicalUrl(slug)} />
           
           {/* OpenGraph meta tags */}
           <meta property="og:title" content={article.title} />
           <meta property="og:description" content={article.description || 'Read this article on BriefSnap'} />
           <meta property="og:type" content="article" />
-          <meta property="og:url" content={window.location.href} />
-          {article.img_url && (
-            <>
-              <meta property="og:image" content={article.img_url} />
-              <meta property="og:image:secure_url" content={article.img_url} />
-              <meta property="og:image:alt" content={article.title} />
-            </>
+          <meta property="og:url" content={getCanonicalUrl(slug)} />
+          <meta property="og:site_name" content="BriefSnap" />
+          <meta property="og:locale" content="en_US" />
+          <meta property="og:image" content={article.img_url || DEFAULT_OG_IMAGE} />
+          <meta property="og:image:secure_url" content={article.img_url || DEFAULT_OG_IMAGE} />
+          <meta property="og:image:alt" content={article.title} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          {article.timestamp && (
+            <meta property="article:published_time" content={article.timestamp.toDate().toISOString()} />
+          )}
+          {article.topic && (
+            <meta property="article:section" content={article.topic} />
           )}
           
           {/* Twitter Card meta tags */}
-          <meta name="twitter:card" content={article.img_url ? "summary_large_image" : "summary"} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:site" content="@briefsnap" />
           <meta name="twitter:title" content={article.title} />
           <meta name="twitter:description" content={article.description || 'Read this article on BriefSnap'} />
-          {article.img_url && (
-            <meta name="twitter:image" content={article.img_url} />
+          <meta name="twitter:image" content={article.img_url || DEFAULT_OG_IMAGE} />
+          <meta name="twitter:image:alt" content={article.title} />
+          
+          {/* Additional meta tags for better indexing */}
+          <meta name="author" content="BriefSnap" />
+          <meta name="robots" content="index, follow" />
+          {article.topic && (
+            <meta name="news_keywords" content={article.topic} />
           )}
         </Helmet>
       )}

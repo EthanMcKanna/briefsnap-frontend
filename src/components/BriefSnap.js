@@ -372,8 +372,33 @@ export default function BriefSnap() {
       <Helmet>
         <title>BriefSnap - Your Daily AI-Powered News Summary</title>
         <meta name="description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
+        <link rel="canonical" href={process.env.NODE_ENV === 'production' ? 'https://briefsnap.com' : 'http://localhost:3000'} />
+        
+        {/* OpenGraph meta tags */}
         <meta property="og:title" content="BriefSnap - Your Daily AI-Powered News Summary" />
         <meta property="og:description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={process.env.NODE_ENV === 'production' ? 'https://briefsnap.com' : 'http://localhost:3000'} />
+        <meta property="og:site_name" content="BriefSnap" />
+        <meta property="og:locale" content="en_US" />
+        <meta property="og:image" content={process.env.NODE_ENV === 'production' ? 'https://briefsnap.com/logo512.png' : 'http://localhost:3000/logo512.png'} />
+        <meta property="og:image:secure_url" content={process.env.NODE_ENV === 'production' ? 'https://briefsnap.com/logo512.png' : 'http://localhost:3000/logo512.png'} />
+        <meta property="og:image:alt" content="BriefSnap - AI-Powered News Summaries" />
+        <meta property="og:image:width" content="512" />
+        <meta property="og:image:height" content="512" />
+        
+        {/* Twitter Card meta tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@briefsnap" />
+        <meta name="twitter:title" content="BriefSnap - Your Daily AI-Powered News Summary" />
+        <meta name="twitter:description" content="Stay informed with BriefSnap's AI-powered daily news summaries. Get concise, accurate breakdowns of the day's most important stories." />
+        <meta name="twitter:image" content={process.env.NODE_ENV === 'production' ? 'https://briefsnap.com/logo512.png' : 'http://localhost:3000/logo512.png'} />
+        <meta name="twitter:image:alt" content="BriefSnap - AI-Powered News Summaries" />
+        
+        {/* Additional meta tags */}
+        <meta name="author" content="BriefSnap" />
+        <meta name="robots" content="index, follow" />
+        <meta name="keywords" content="news, AI, summary, daily news, briefing, current events" />
       </Helmet>
       <Header />
       <div className="flex flex-col items-center justify-center p-4 flex-grow">
